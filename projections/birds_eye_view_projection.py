@@ -17,8 +17,8 @@ class birds_eye_view:
 
 
     def get_birds_eye_view(self, pcl, shift_pcl = True, scale_pcl = True, scale_image = True):
-        # pcl = filter_range_points(pcl,self.x_range, self.y_range,
-        #                           self.z_range, False)
+        pcl = filter_range_points(pcl,self.x_range, self.y_range,
+                                   self.z_range, False)
         if(shift_pcl):
             pcl = shift_points(pcl, shift_x = True, shift_y = True)
         if(scale_pcl):
