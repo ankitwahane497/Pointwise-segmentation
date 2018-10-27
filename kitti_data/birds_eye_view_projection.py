@@ -1,8 +1,8 @@
 from utils import *
 import numpy as np
 class birds_eye_view:
-    def __init__(self, target_height = 800, target_width = 400, x_range = 200,
-        y_range = 300,z_range = 10,channels =3):
+    def __init__(self, target_height = 800, target_width = 400, x_range = 100,
+        y_range = 60,z_range = 10,channels =3):
         self.target_height = target_height
         self.target_width  = target_width
         self.channels      = channels
@@ -17,8 +17,8 @@ class birds_eye_view:
 
 
     def get_birds_eye_view(self, pcl, shift_pcl = True, scale_pcl = True, scale_image = True):
-        #pcl = filter_range_points(pcl,self.x_range, self.y_range,
-        #                           self.z_range, False)
+        pcl = filter_range_points(pcl,self.x_range, self.y_range,
+                                  self.z_range, False)
         if(shift_pcl):
             pcl = shift_points(pcl, shift_x = True, shift_y = True)
         if(scale_pcl):

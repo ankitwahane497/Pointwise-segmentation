@@ -18,6 +18,7 @@ velodyne = 'velodyne'
 calib = 'calib'
 basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 
+from birds_eye_view_projection import birds_eye_view
 
 def loadKittiFiles (frame) :
   '''
@@ -222,6 +223,36 @@ def get_pcl_instance_labels(pcl,Bb):
     return new_pcl
 
 
+def cart_to_hom(pcl):
+    ##convert cartesian to homogenous
+    np_ = pcl.shape[0]
+    pcl = np.hstack((pcl,np.ones((np_,1))))
+    return pcl
+
+def project_velo_to_rect(pcl,calib):
+    pcl = cart_to_hom(pcl[:,:3])
+    pcl = np.dot(pcl,np.transpose(calib['Tr_velo_to_cam'].reshape(3,4)))
+    pcl_rect = np.transpose(np.dot(calib['R0_rect'].reshape(3,3),np.transpose(pcl)))
+    pcl_rect = cart_to_hom(pcl_rect)
+    img      = np.dot(pcl_rect, np.transpose(calib['P2'].reshape(3,4)))
+    img[:,0]/= img[:,2]
+    img[:,1]/= img[:,2]
+    return img[:,0:2]
+
+
+
+def get_lidar_projection(pcl,calib):
+    img =project_velo_to_rect(pcl,calib)
+    pp = np.zeros((1000,1000))
+    for i in range(len(img)):
+        if ((img[i,0] > 0) and (img[i,0] < 1000) and
+            (img[i,1] > 0) and (img[i,1] < 1000)):
+            pp[int(img[i,0]),int(img[i,1])] = 1
+    # pp = convert_image_plot(pp)
+    plt.imshow(pp)
+    plt.show()
+    # pdb.set_trace()
+
 def visualize(pcl,label):
     canvas = vispy.scene.SceneCanvas(keys='interactive', show=True)
     view = canvas.central_widget.add_view()
@@ -241,12 +272,21 @@ def visualize(pcl,label):
     axis = visuals.XYZAxis(parent=view.scene)
     vispy.app.run()
     # pdb.set_trace()
-def main (frame='000008'):
+def main_frame (frame='000008'):
   """
   Completes the plots
   """
   left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
   bb3d = get_3D_BoundingBox(label_data, calib_data)
+  proj = get_lidar_projection(velo,calib_data)
+  pcl = get_pcl_class_label(velo, bb3d)
+  pr  = birds_eye_view()
+  img = pr.get_birds_eye_view(pcl)
+  img = cv2.flip(img , 1)
+  img = cv2.flip(img , 0)
+  plt.imshow(img)
+  plt.show()
+
 
 
 
@@ -263,4 +303,4 @@ if __name__ == '__main__':
                       help='frame name without extension')
   FLAGS, unparsed = parser.parse_known_args()
   #print ('FLAGS', FLAGS)
-  main(frame=FLAGS.frame)
+  main_frame(frame=FLAGS.frame)

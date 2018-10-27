@@ -1,0 +1,4 @@
+*.ply
+*.npy
+__pychache__
+
