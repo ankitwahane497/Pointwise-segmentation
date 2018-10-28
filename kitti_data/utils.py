@@ -1,3 +1,4 @@
+import pdb
 #
 #
 #
@@ -23,11 +24,13 @@ def scale_points(pcl, x_scale = None, y_scale = None):
         pcl[:,1] = y_scale*pcl[:,1]
     return pcl
 
-def shift_points(pcl,shift_x = False, shift_y= False):
+def shift_points(pcl,shift_x = False, shift_y= False, y_range = 0):
     if (shift_x == True):
         shift_factor = min(pcl[:,0])
         pcl[:,0]     += abs(shift_factor)
     if (shift_y == True):
-        shift_factor = min(pcl[:,1])
+        # shift_factor = min(pcl[:,1])
+        shift_factor = y_range
+        # pdb.set_trace()
         pcl[:,1]     += abs(shift_factor)
     return pcl

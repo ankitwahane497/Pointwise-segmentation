@@ -11,12 +11,17 @@ from PIL import Image
 from math import sin, cos
 import argparse
 import numpy as np
-
+import copy
+from utils import *
 left_cam_rgb= 'image_2'
 label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+
+import vispy
+from vispy.scene import visuals
+
 
 from birds_eye_view_projection import birds_eye_view
 
@@ -232,38 +237,131 @@ def cart_to_hom(pcl):
 def project_velo_to_rect(pcl,calib):
     pcl = cart_to_hom(pcl[:,:3])
     pcl = np.dot(pcl,np.transpose(calib['Tr_velo_to_cam'].reshape(3,4)))
-    pcl_rect = np.transpose(np.dot(calib['R0_rect'].reshape(3,3),np.transpose(pcl)))
+    # pcl_rect = np.transpose(np.dot(calib['R0_rect'].reshape(3,3),np.transpose(pcl)))
+    pcl_rect = np.dot(pcl,calib['R0_rect'].reshape(3,3))
+    # img = pcl_rect
     pcl_rect = cart_to_hom(pcl_rect)
     img      = np.dot(pcl_rect, np.transpose(calib['P2'].reshape(3,4)))
+    # img      = np.dot(pcl, np.transpose(calib['P2'].reshape(3,4)))
+
     img[:,0]/= img[:,2]
     img[:,1]/= img[:,2]
+    # visualize(np.hstack((img[:,0:2],np.zeros((len(img),1)))))
     return img[:,0:2]
 
+def pcl_to_rect(pcl,calib):
+    pcl = cart_to_hom(pcl[:,:3])
+    pcl = np.dot(pcl,np.transpose(calib['Tr_velo_to_cam'].reshape(3,4)))
+    # pcl_rect = np.transpose(np.dot(calib['R0_rect'].reshape(3,3),np.transpose(pcl)))
+    pcl_rect = np.dot(pcl,calib['R0_rect'].reshape(3,3))
+    return pcl_rect
 
 
-def get_lidar_projection(pcl,calib):
-    img =project_velo_to_rect(pcl,calib)
-    pp = np.zeros((1000,1000))
-    for i in range(len(img)):
-        if ((img[i,0] > 0) and (img[i,0] < 1000) and
-            (img[i,1] > 0) and (img[i,1] < 1000)):
-            pp[int(img[i,0]),int(img[i,1])] = 1
-    # pp = convert_image_plot(pp)
-    plt.imshow(pp)
-    plt.show()
-    # pdb.set_trace()
 
-def visualize(pcl,label):
+
+def get_lidar_in_fov(pcl,calib,image,clip_dist = 2.0, return_ind = False):
+    pts_2d = project_velo_to_rect(pcl,calib)
+    img_h , img_w = image.shape[:2]
+    Fov_in  = (pts_2d[:,0] > 0) & (pts_2d[:,0] < img_w) & \
+              (pts_2d[:,1] > 0) & (pts_2d[:,1] < img_h)
+    Fov_in  = Fov_in & (pcl[:,0] > clip_dist)
+    pcl_fov = pcl[Fov_in,:]
+    if return_ind == True:
+        return pcl_fov, pts_2d, Fov_in
+    else:
+        return pcl_fov
+
+
+def get_lidar_projection(pcl,calib, left_cam_image, on_image = True):
+    pcl_fov, pts_2d, fov_ind = get_lidar_in_fov(pcl,calib,
+                                np.array(left_cam_image),
+                                return_ind = True)
+    left_cam_image = np.array(left_cam_image)
+    img_h , img_w = left_cam_image.shape[:2]
+    img_pts_fov = pts_2d[fov_ind,:]
+
+    proj_img = np.zeros((img_w + 1, img_h + 1,3))
+    for i in range(img_pts_fov.shape[0]):
+        try:
+            proj_img[int(np.round(img_pts_fov[i,0])),int(np.round(img_pts_fov[i,1])),0] = 1
+        except:
+            print (img_labels[i])
+
+    if on_image:
+        pcl_fov_rect = pcl_to_rect(pcl_fov,calib)
+
+        cmap = plt.cm.get_cmap('hsv',256)
+        cmap = np.array([cmap(i) for i in range(256)])[:,:3]*255
+
+        for i in range(img_pts_fov.shape[0]):
+            depth = pcl_fov_rect[i,2]
+            color = cmap[int(640./depth),:]
+            cv2.circle(left_cam_image, (int(np.round(img_pts_fov[i,0])),
+                                        int(np.round(img_pts_fov[i,1]))),
+                                        2, color = tuple(color) , thickness = -1)
+        return cv2.flip(np.rot90(proj_img,3),1) , left_cam_image
+    else:
+        return cv2.flip(np.rot90(proj_img,3),1)
+
+def get_lidar_projection_with_labels(pcl,calib, left_cam_image, on_image = True):
+    labels = copy.deepcopy(pcl[:,-1])
+    pcl    = pcl[:,:3]
+    pcl_fov, pts_2d, fov_ind = get_lidar_in_fov(pcl,calib,
+                                np.array(left_cam_image),
+                                return_ind = True)
+    left_cam_image = np.array(left_cam_image)
+    img_h , img_w = left_cam_image.shape[:2]
+    img_pts_fov = pts_2d[fov_ind,:]
+    img_labels  = labels[fov_ind]
+
+    proj_img = np.zeros((img_w + 1, img_h + 1,3))
+    for i in range(img_pts_fov.shape[0]):
+        try:
+            proj_img[int(np.round(img_pts_fov[i,0])),int(np.round(img_pts_fov[i,1])),int(img_labels[i])] = 1
+        except:
+            print (img_labels[i])
+
+    if on_image:
+        pcl_fov_rect = pcl_to_rect(pcl_fov,calib)
+
+        cmap = plt.cm.get_cmap('hsv',256)
+        cmap = np.array([cmap(i) for i in range(256)])[:,:3]*255
+        red = [255,0,255]
+
+        for i in range(img_pts_fov.shape[0]):
+            depth = pcl_fov_rect[i,2]
+            color = cmap[int(640./depth),:]
+            if img_labels[i] == 0:
+                cv2.circle(left_cam_image, (int(np.round(img_pts_fov[i,0])),
+                                            int(np.round(img_pts_fov[i,1]))),
+                                            2, color = tuple(color) , thickness = -1)
+            else:
+                cv2.circle(left_cam_image, (int(np.round(img_pts_fov[i,0])),
+                                            int(np.round(img_pts_fov[i,1]))),
+                                            2, color = red , thickness = -1)
+
+        return cv2.flip(np.rot90(proj_img,3),1) , left_cam_image
+    else:
+        return cv2.flip(np.rot90(proj_img,3),1)
+
+
+
+
+def visualize(pcl,label = None):
     canvas = vispy.scene.SceneCanvas(keys='interactive', show=True)
     view = canvas.central_widget.add_view()
     scatter = visuals.Markers()
     # pcl = convert_pcl(pcl,label)
-    pcl = filter_points(pcl)
-    pcl = convert_pcl(pcl,label)
-    pcl = add_points(pcl,label)
+    if (label != None):
+        pcl = convert_pcl(pcl,label)
+    if (label != None):
+        pcl = add_points(pcl,label)
     # pcl = get_road(pcl)
+    if (label != None):
+        scatter.set_data(pcl[:,:3],edge_color = color_b(pcl[:,-1]), size = 2)
+    else:
+        scatter.set_data(pcl[:,:3], size = 7)
 
-    scatter.set_data(pcl[:,:3],edge_color = color_b(pcl[:,-1]), size = 2)
     # scatter.set_data(, edge_color=None, face_color=(1, 1, 1, .5), size=5)
     view.add(scatter)
 
@@ -272,21 +370,33 @@ def visualize(pcl,label):
     axis = visuals.XYZAxis(parent=view.scene)
     vispy.app.run()
     # pdb.set_trace()
+
 def main_frame (frame='000008'):
   """
   Completes the plots
   """
   left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
   bb3d = get_3D_BoundingBox(label_data, calib_data)
-  proj = get_lidar_projection(velo,calib_data)
+  # proj, cam_img = get_lidar_projection(velo,calib_data, left_cam)
   pcl = get_pcl_class_label(velo, bb3d)
+  proj , cam_img = get_lidar_projection_with_labels(velo,calib_data, left_cam, on_image =True)
   pr  = birds_eye_view()
   img = pr.get_birds_eye_view(pcl)
   img = cv2.flip(img , 1)
   img = cv2.flip(img , 0)
+  plt.subplot(2,2,1)
+  plt.imshow(left_cam)
+  plt.title('Camera Image')
+  plt.subplot(2,2,2)
+  plt.imshow(proj)
+  plt.title('LiDAR Front view projection with labels')
+  plt.subplot(2,2,3)
+  plt.imshow(cam_img)
+  plt.title('LiDAR Front view projection with labels on Image')
+  plt.subplot(2,2,4)
   plt.imshow(img)
+  plt.title('Birds eye view with labels')
   plt.show()
-
 
 
 
