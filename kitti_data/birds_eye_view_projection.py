@@ -1,7 +1,7 @@
 from utils import *
 import numpy as np
 class birds_eye_view:
-    def __init__(self, target_height = 800, target_width = 400, x_range = 100,
+    def __init__(self, target_height = 800, target_width = 400, x_range = 60,
         y_range = 20,z_range = 10,channels =3):
         self.target_height = target_height
         self.target_width  = target_width

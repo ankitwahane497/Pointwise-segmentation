@@ -17,7 +17,8 @@ left_cam_rgb= 'image_2'
 label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
-basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+basedir  = '/home/sanket/MS_Thesis/kitti'
 
 import vispy
 from vispy.scene import visuals
