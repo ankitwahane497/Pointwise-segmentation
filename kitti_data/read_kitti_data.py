@@ -17,8 +17,8 @@ left_cam_rgb= 'image_2'
 label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
-# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-basedir  = '/home/sanket/MS_Thesis/kitti'
+basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+# basedir  = '/home/sanket/MS_Thesis/kitti'
 
 import vispy
 from vispy.scene import visuals
@@ -371,6 +371,43 @@ def visualize(pcl,label = None):
     axis = visuals.XYZAxis(parent=view.scene)
     vispy.app.run()
     # pdb.set_trace()
+
+def color_labels(labels):
+    colored_labels  = np.zeros((len(labels),3))
+    for i in range(len(labels)):
+        if labels[i] == 0:
+            pass
+        else:
+            colored_labels[i][0] = 1
+    return colored_labels
+
+def visualize_results(pcl,label = None):
+    canvas = vispy.scene.SceneCanvas(keys='interactive', show=True)
+    view = canvas.central_widget.add_view()
+    scatter = visuals.Markers()
+    # pcl = convert_pcl(pcl,label)
+    if (label.any() != None):
+        scatter.set_data(pcl[:,:3],edge_color = color_labels(label), size = 2)
+    else:
+        scatter.set_data(pcl[:,:3], size = 7)
+
+    # scatter.set_data(, edge_color=None, face_color=(1, 1, 1, .5), size=5)
+    view.add(scatter)
+
+    view.camera = 'turntable'
+
+    axis = visuals.XYZAxis(parent=view.scene)
+    vispy.app.run()
+    # pdb.set_trace()
+
+
+
+def get_frame_and_label(frame):
+      left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
+      bb3d = get_3D_BoundingBox(label_data, calib_data)
+      pcl = get_pcl_class_label(velo, bb3d)
+      pcl = filter_range_points(pcl, x_range = 60, y_range = 30)
+      return pcl[:,:3], pcl[:,-1]
 
 def main_frame (frame='000008'):
   """
