@@ -31,7 +31,7 @@ class Kitti_data_iterator:
                                             test_size = 0.2)
 
     def get_batch(self):
-        batch_data   = np.zeros((self.batch_size,self.num_points, 3))
+        batch_data   = np.zeros((self.batch_size,self.num_points, 4))
         batch_labels = np.zeros((self.batch_size,self.num_points))
         # batch_data = []
         # batch_labels = []
@@ -43,8 +43,11 @@ class Kitti_data_iterator:
         for i in range(self.batch_size):
             pcl, label = get_frame_and_label(self.train_data[self.batch_pointer + i])
             if (len(pcl) >= self.num_points):
-                batch_data[i] = pcl[:self.num_points]
-                batch_labels[i] = label[:self.num_points]
+                indx = np.random.choice(len(pcl), self.num_points, replace=False)
+                # batch_data[i] = pcl[:self.num_points]
+                # batch_labels[i] = label[:self.num_points]
+                batch_data[i] = pcl[indx]
+                batch_labels[i] = label[indx]
             else:
                 batch_data[i,:len(pcl)] = pcl
                 batch_data[len(pcl):]   = pcl[-1]

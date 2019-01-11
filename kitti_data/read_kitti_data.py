@@ -17,8 +17,8 @@ left_cam_rgb= 'image_2'
 label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
-basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-# basedir  = '/home/sanket/MS_Thesis/kitti'
+# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+basedir  = '/home/sanket/MS_Thesis/kitti'
 
 import vispy
 from vispy.scene import visuals
@@ -165,8 +165,12 @@ def get_3D_BoundingBox(labeld, calibd):
   """
   T1 = calibd['Tr_velo_to_cam'].reshape(3,4)
   T2 = inverse_rigid_trans(T1)
-
+  key_dict = {'Car':1, 'Van': 2, 'Truck':3,
+             'Pedestrian':4, 'Person_sitting':5,
+             'Cyclist': 6 , 'Tram' : 7 ,
+             'Misc' : 0 , 'DontCare': 0}
   bb3d = []
+  label_bb = []
 
   for key in labeld.keys ():
     for o in range( labeld[key].shape[0]):
@@ -181,7 +185,8 @@ def get_3D_BoundingBox(labeld, calibd):
       if key != 'DontCare' :
         corners_3D = computeBox3D(labeld[key][o],calibd['R0_rect'].reshape(3,3),T2)
         bb3d.append(corners_3D)
-  return np.array(bb3d)
+        label_bb.append(key_dict[key])
+  return np.array(bb3d), label_bb
 
 def add_Bbox_points_to_pcl(pcl1,Bb):
     """
@@ -196,7 +201,7 @@ def add_Bbox_points_to_pcl(pcl1,Bb):
             pcl[-i*8-8+j] = [b1[j,0],b1[j,1],b1[j,2],5]
     return pcl
 
-def get_pcl_class_label(pcl,Bb):
+def get_pcl_class_label(pcl,Bb, label_bb):
     """
     Label all the points inside a class for a 3D Bbox
     """
@@ -208,12 +213,12 @@ def get_pcl_class_label(pcl,Bb):
         z_max , z_min = max(b1[:,2]), min(b1[:,2])
         coord = np.where(((pcl[:,0] > x_min) & (pcl[:,0] < x_max))&
                         ((pcl[:,1] > y_min) & (pcl[:,1] < y_max)))
-        pcl[coord,-1] = 1
+        pcl[coord,-1] = label_bb[i]
     return pcl
 
 def get_pcl_instance_labels(pcl,Bb):
     pcl[:,-1] = 0
-    new_pcl = np.zeros((len(pcl),7))
+    new_pcl = np.zeros((len(pcl),8))
     new_pcl[:,:3] = pcl[:,:3]
     for i in range(len(Bb)):
         b1 = Bb[i]
@@ -404,10 +409,16 @@ def visualize_results(pcl,label = None):
 
 def get_frame_and_label(frame):
       left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
-      bb3d = get_3D_BoundingBox(label_data, calib_data)
-      pcl = get_pcl_class_label(velo, bb3d)
-      pcl = filter_range_points(pcl, x_range = 60, y_range = 30)
-      return pcl[:,:3], pcl[:,-1]
+      # pdb.set_trace()
+      velo = np.hstack((velo,np.zeros((len(velo),1))))
+      bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
+      pcl = get_pcl_class_label(velo, bb3d, label_bb)
+      pcl = filter_range_points(pcl, x_range = 40, y_range = 15)
+      # pdb.set_trace()
+      pcl = shift_points(pcl, shift_y = True, y_range = 15)
+      pcl = scale_points(pcl,y_scale = (1/30), x_scale = (1/40))
+      # visualize_results(pcl)
+      return pcl[:,:4], pcl[:,-1]
 
 def main_frame (frame='000008'):
   """
