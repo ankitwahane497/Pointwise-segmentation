@@ -16,27 +16,39 @@ def global_nearest_neighbors_features(data, k = 20):
 
 
 def get_global_features(data,knn):
-    nn_pts = [data[i][knn[i]] for i in range(len(data))]
+    nn_pts = [data[i][knn] for i in range(len(data))]
     nn_pts =  np.array(nn_pts)
+    if nn_pts.shape[-1] == 1:
+        nn_pts = np.squeeze(nn_pts , axis  = -1)
+    #pdb.set_trace()
+    return nn_pts
+
+def get_global_features_deep(data, knn):
+    nn_pts = [np.mean(data[i][knn],axis = -2) for i in range(len(data))]
+    nn_pts = np.array(nn_pts)
     return nn_pts
 
 def get_local_features(data,knn):
-    # nn_pts = [data[i][:,np.newaxis] - data[i][knn[i]]  for i in range(len(data))]
-    nn_pts = [data[:][:,np.newaxis] - data[:][knn[i]]  for i in range(len(data))]
+    #pdb.set_trace()
+    nn_pts = [data[i][:,np.newaxis] - data[i][knn]  for i in range(len(data))]
+    #nn_pts = [data[i] - data[i][knn]  for i in range(len(data))]
+    nn_pts =  np.array(nn_pts)
+    if nn_pts.shape[-1] == 1:
+        nn_pts = np.squeeze(nn_pts, axis  = -1)
+    #pdb.set_trace()
+    return nn_pts
+
+def get_local_features_deep(data,knn):
+    #     nn_pts  = np.zeros_like(data)
+    #     nn_pts = data[:][:,np.newaxis] - data[:][knn]
+    #pdb.set_trace()
+    nn_pts = [data[i] - np.mean(data[i][knn],axis = -2)  for i in range(len(data))]
     nn_pts =  np.array(nn_pts)
     return nn_pts
 
-# def get_local_features(data,knn):
-#     nn_pts  = np.zeros_like(data)
-#     nn_pts = data[:][:,np.newaxis] - data[:][knn]
-#     # nn_pts = [data[i][:,np.newaxis] - data[i][knn[i]]  for i in range(len(data))]
-#     # nn_pts = [data[:][:,np.newaxis] - data[:][knn[i]]  for i in range(len(data))]
-#     # nn_pts =  np.array(nn_pts)
-#     return nn_pts
-
 
 def get_nearest_neighbors_id(data, k =20):
-    data = np.squeeze(data, axis = 3)
+    data = np.squeeze(data, axis = -1)
     # tree = [ KDTree(data[i], leaf_size=2) for i in range(len(data))]
     tree = [ cKDTree(data[i]) for i in range(len(data))]
     data_ = [tree[i].query(data[i], k = k) for i in range(len(data))]

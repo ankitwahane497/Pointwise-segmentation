@@ -28,6 +28,8 @@ def get_model(point_cloud, is_training, bn_decay=None):
     k = 30
     nearest_pts_id = tf.py_func(pointer_util.get_nearest_neighbors_id,[input_image,k],tf.int32)
     # pointer_util.get_nearest_neighbors_id(input_image,k)
+    nearest_pts_id = tf.reshape(nearest_pts_id, (num_point,k))
+    #pdb.set_trace()
 
     global_edge_features = tf.py_func(pointer_util.get_global_features,[input_image,nearest_pts_id],tf.float32)
     local_edge_features  = tf.py_func(pointer_util.get_local_features,[input_image,nearest_pts_id],tf.float32)
@@ -51,96 +53,97 @@ def get_model(point_cloud, is_training, bn_decay=None):
                        padding='VALID', stride=[1,1],
                        bn=True, is_training=is_training,
                        scope='out_feature_1', bn_decay=bn_decay, is_dist=True)
-    # out_feature_1 = tf_util.conv2d(global_feature_1,
+    #out_feature_1 = tf_util.conv2d(global_feature_1,
     #                    126, [1,1],
     #                    padding='VALID', stride=[1,1],
     #                    bn=True, is_training=is_training,
     #                    scope='out_feature_1', bn_decay=bn_decay, is_dist=True)
-    #
-    # global_edge_features_2 = tf.py_func(pointer_util.get_global_features,[out_feature_1,nearest_pts_id],tf.float32)
-    # local_edge_features_2  = tf.py_func(pointer_util.get_local_features,[out_feature_1,nearest_pts_id],tf.float32)
-    #
-    # global_edge_features_2 = tf.reshape(global_edge_features_2, (batch_size,num_point,k,4))
-    # local_edge_features_2  = tf.reshape(local_edge_features_2, (batch_size,num_point,k,4))
-    #
-    #
-    # global_feature_2 = pointer_util.feature_network(global_edge_features_2,
-    #                                                 mlp = [512,256],
-    #                                                 name ='global_feature_2_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    # local_feature_2  = pointer_util.feature_network(local_edge_features_2,
-    #                                                 mlp = [512,256],
-    #                                                 name ='local_feature_2_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    #
-    # out_feature_2 = tf_util.conv2d(tf.concat([global_feature_2, local_feature_2], axis=-1),
-    #                    256, [1,1],
-    #                    padding='VALID', stride=[1,1],
-    #                    bn=True, is_training=is_training,
-    #                    scope='out_feature_2', bn_decay=bn_decay, is_dist=True)
-    #
-    # out_feature_2 = tf_util.conv2d(global_feature_2,
-    #                    256, [1,1],
-    #                    padding='VALID', stride=[1,1],
-    #                    bn=True, is_training=is_training,
-    #                    scope='out_feature_2', bn_decay=bn_decay, is_dist=True)
-    #
-    #
-    # global_edge_features_3 = tf.py_func(pointer_util.get_global_features,[out_feature_2,nearest_pts_id],tf.float32)
-    # local_edge_features_3  = tf.py_func(pointer_util.get_local_features,[out_feature_2,nearest_pts_id],tf.float32)
-    #
-    # global_edge_features_3 = tf.reshape(global_edge_features_3, (batch_size,num_point,k,4))
-    # local_edge_features_3  = tf.reshape(local_edge_features_3, (batch_size,num_point,k,4))
-    #
-    #
-    # global_feature_3 = pointer_util.feature_network(global_edge_features_3,
-    #                                                 mlp = [256,256],
-    #                                                 name ='global_feature_3_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    # local_feature_3  = pointer_util.feature_network(local_edge_features_3,
-    #                                                 mlp = [256,256],
-    #                                                 name ='local_feature_3_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    #
-    # out_feature_3 = tf_util.conv2d(tf.concat([global_feature_3, local_feature_3], axis=-1),
-    #                    126, [1,1],
-    #                    padding='VALID', stride=[1,1],
-    #                    bn=True, is_training=is_training,
-    #                    scope='out_feature_3', bn_decay=bn_decay, is_dist=True)
-    #
-    #
-    #
-    # global_edge_features_4 = tf.py_func(pointer_util.get_global_features,[out_feature_3,nearest_pts_id],tf.float32)
-    # local_edge_features_4  = tf.py_func(pointer_util.get_local_features,[out_feature_3,nearest_pts_id],tf.float32)
-    #
-    # global_edge_features_4 = tf.reshape(global_edge_features_4, (batch_size,num_point,k,4))
-    # local_edge_features_4  = tf.reshape(local_edge_features_4, (batch_size,num_point,k,4))
-    #
-    #
-    # global_feature_4 = pointer_util.feature_network(global_edge_features_4,
-    #                                                 mlp = [126,126],
-    #                                                 name ='global_feature_4_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    # local_feature_4  = pointer_util.feature_network(local_edge_features_4,
-    #                                                 mlp = [126,126],
-    #                                                 name ='local_feature_4_',
-    #                                                 is_training = is_training,
-    #                                                 bn_decay = bn_decay)
-    #
-    # out_feature_4 = tf_util.conv2d(tf.concat([global_feature_4, local_feature_4], axis=-1),
-    #                    126, [1,1],
-    #                    padding='VALID', stride=[1,1],
-    #                    bn=True, is_training=is_training,
-    #                    scope='out_feature_4', bn_decay=bn_decay, is_dist=True)
+    
+    global_edge_features_2 = tf.py_func(pointer_util.get_global_features_deep,[out_feature_1,nearest_pts_id],tf.float32)
+    local_edge_features_2  = tf.py_func(pointer_util.get_local_features_deep,[out_feature_1,nearest_pts_id],tf.float32)
+    
+    #pdb.set_trace()
+    global_edge_features_2 = tf.reshape(global_edge_features_2, (batch_size,num_point,k,126))
+    local_edge_features_2  = tf.reshape(local_edge_features_2, (batch_size,num_point,k,126))
+    
+    
+    global_feature_2 = pointer_util.feature_network(global_edge_features_2,
+                                                    mlp = [512,256],
+                                                    name ='global_feature_2_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    local_feature_2  = pointer_util.feature_network(local_edge_features_2,
+                                                    mlp = [512,256],
+                                                    name ='local_feature_2_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    
+    out_feature_2 = tf_util.conv2d(tf.concat([global_feature_2, local_feature_2], axis=-1),
+                       256, [1,1],
+                       padding='VALID', stride=[1,1],
+                       bn=True, is_training=is_training,
+                       scope='out_feature_2', bn_decay=bn_decay, is_dist=True)
+    
+    #out_feature_2 = tf_util.conv2d(global_feature_2,
+    #                   256, [1,1],
+    #                   padding='VALID', stride=[1,1],
+    #                   bn=True, is_training=is_training,
+    #                   scope='out_feature_2', bn_decay=bn_decay, is_dist=True)
+    
+    
+    global_edge_features_3 = tf.py_func(pointer_util.get_global_features_deep,[out_feature_2,nearest_pts_id],tf.float32)
+    local_edge_features_3  = tf.py_func(pointer_util.get_local_features_deep,[out_feature_2,nearest_pts_id],tf.float32)
+    #pdb.set_trace()
+    global_edge_features_3 = tf.reshape(global_edge_features_3, (batch_size,num_point,k,256))
+    local_edge_features_3  = tf.reshape(local_edge_features_3, (batch_size,num_point,k,256))
+    
+    
+    global_feature_3 = pointer_util.feature_network(global_edge_features_3,
+                                                    mlp = [256,256],
+                                                    name ='global_feature_3_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    local_feature_3  = pointer_util.feature_network(local_edge_features_3,
+                                                    mlp = [256,256],
+                                                    name ='local_feature_3_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    
+    out_feature_3 = tf_util.conv2d(tf.concat([global_feature_3, local_feature_3], axis=-1),
+                       126, [1,1],
+                       padding='VALID', stride=[1,1],
+                       bn=True, is_training=is_training,
+                       scope='out_feature_3', bn_decay=bn_decay, is_dist=True)
+    
+    
+    
+    global_edge_features_4 = tf.py_func(pointer_util.get_global_features_deep,[out_feature_3,nearest_pts_id],tf.float32)
+    local_edge_features_4  = tf.py_func(pointer_util.get_local_features_deep,[out_feature_3,nearest_pts_id],tf.float32)
+    #pdb.set_trace()
+    global_edge_features_4 = tf.reshape(global_edge_features_4, (batch_size,num_point,k,126))
+    local_edge_features_4  = tf.reshape(local_edge_features_4, (batch_size,num_point,k,126))
+    
+    
+    global_feature_4 = pointer_util.feature_network(global_edge_features_4,
+                                                    mlp = [126,126],
+                                                    name ='global_feature_4_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    local_feature_4  = pointer_util.feature_network(local_edge_features_4,
+                                                    mlp = [126,126],
+                                                    name ='local_feature_4_',
+                                                    is_training = is_training,
+                                                    bn_decay = bn_decay)
+    
+    out_feature_4 = tf_util.conv2d(tf.concat([global_feature_4, local_feature_4], axis=-1),
+                       126, [1,1],
+                       padding='VALID', stride=[1,1],
+                       bn=True, is_training=is_training,
+                       scope='out_feature_4', bn_decay=bn_decay, is_dist=True)
 
-    out_max = tf.reduce_max(global_feature_1, axis =-2, keepdims=True)
+    #out_max = tf.reduce_max(global_feature_1, axis =-2, keepdims=True)
     # out_max = tf.reduce_max(out_feature_1, axis =-2, keepdims=True)
-    # out_max = tf.reduce_max(out_feature_4, axis =-2, keepdims=True)
+    out_max = tf.reduce_max(out_feature_4, axis =-2, keepdims=True)
     net = tf_util.conv2d(out_max, 126, [1,1], padding='VALID', stride=[1,1],
              bn=True, is_training=is_training, scope='seg/conv1', is_dist=True)
     # net = tf_util.conv2d(net, 126, [1,1], padding='VALID', stride=[1,1],

@@ -3,10 +3,12 @@ import sys
 import glob
 import pdb
 from sklearn.model_selection import train_test_split
+sys.path.append('/home/srgujar/Pointwise-segmentation/models/tf_utils')
 import pointer_sem_seg_2 as model
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-basedir = '/home/sanket/MS_Thesis/kitti'
-sys.path.append('/home/sanket/MS_Thesis/Pointwise-segmentation/kitti_data')
+#basedir = '/home/sanket/MS_Thesis/kitti'
+basedir ='/home/srgujar/Data/training'
+sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
 import tensorflow as tf
 import logging
@@ -31,9 +33,9 @@ def infer_model(dataset_iterator, model_path, net_out):
         pred = sess.run([net_out], feed_dict = {pcl_placeholder : data,
                                        label_placeholder: label_,
                                        is_training_pl:False})
-        np.save('data1.npy', data)
-        np.save('label1.npy', label)
-        np.save('pred1.npy', pred)
+        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/data1.npy', data)
+        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/label1.npy', label)
+        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/pred1.npy', pred)
 
 
 def calculate_accuracy(prediction, labels):
@@ -97,9 +99,9 @@ def train(dataset_iterator, num_iteration, loss, pred):
             # pdb.set_trace()
             data, label , iter , batch_no= dataset_iterator.get_batch()
             label_ = get_one_hot_label(label)
-            if ((iter % 3 == 0) and (batch_no == 0)):
-                path = "/home/sanket/MS_Thesis/Pointwise-segmentation/saved_model/edge_conv_new_"
-                save_path = saver.save(sess, path + str(iter) +".ckpt")
+            if ((batch_no % 50 == 0)):
+                path = "/home/srgujar/Pointwise-segmentation/saved_model/local/pointer_2_"
+                save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
         pdb.set_trace()
 
@@ -110,7 +112,7 @@ if __name__=='__main__':
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_pred, label_placeholder)
-    train(dataset_iterator,num_iteration = 20, loss= loss_model, pred= net_pred)
-    # path = "/home/sanket/MS_Thesis/Pointwise-segmentation/saved_model/"
-    # path += "edge_conv_new_3.ckpt"
-    # infer_model(dataset_iterator, path, net_pred)
+    #train(dataset_iterator,num_iteration = 20, loss= loss_model, pred= net_pred)
+    path = "/home/srgujar/Pointwise-segmentation/saved_model/local/"
+    path += "pointer_2_0_500.ckpt"
+    infer_model(dataset_iterator, path, net_pred)
