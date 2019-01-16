@@ -3,13 +3,13 @@ import sys
 import glob
 import pdb
 from sklearn.model_selection import train_test_split
-basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 # sys.path.append('/home/sanket/MS_Thesis/Pointwise-segmentation/kitti_data')
-from read_kitti_data import *
+from read_carla_data import *
+basedir = '/tmp/Pointwise-segmentation/carla_reader/_out'
 
 
 
-class Kitti_data_iterator:
+class carla_data_iterator:
     def __init__(self, basedir, batch_size = 32 , num_points = 60000):
         self.basedir = basedir
         self.batch_size = batch_size
@@ -23,15 +23,16 @@ class Kitti_data_iterator:
         # pdb.set_trace()
 
     def get_training_files(self):
-        files   = glob.glob(self.basedir+'/image_2/*')
-        self.frames  = [file.split('/')[-1][:-4] for file in files]
+        files   = glob.glob(self.basedir+'/*')
+        # pdb.set_trace()
+        self.frames  = files
 
     def split_training_and_testing(self):
         self.train_data , self.test_data = train_test_split(self.frames,
                                             test_size = 0.2)
 
     def get_batch(self):
-        batch_data   = np.zeros((self.batch_size,self.num_points, 4))
+        batch_data   = np.zeros((self.batch_size,self.num_points, 3))
         batch_labels = np.zeros((self.batch_size,self.num_points))
         # batch_data = []
         # batch_labels = []
@@ -41,7 +42,9 @@ class Kitti_data_iterator:
             self.batch_pointer = 0
             self.iteration += 1
         for i in range(self.batch_size):
-            pcl, label = get_frame_and_label(self.train_data[self.batch_pointer + i])
+            pcl, label , is_fine= get_frame_and_label(self.train_data[self.batch_pointer + i])
+            if is_fine == -1:
+                print (self.train_data[self.batch_pointer + i])
             if (len(pcl) >= self.num_points):
                 indx = np.random.choice(len(pcl), self.num_points, replace=False)
                 # batch_data[i] = pcl[:self.num_points]
@@ -56,5 +59,8 @@ class Kitti_data_iterator:
         return batch_data, batch_labels, self.iteration, self.batch_pointer
 
 if __name__=='__main__':
-    data = Kitti_data_iterator(basedir)
+    data = carla_data_iterator(basedir)
     data.get_training_files()
+    data.get_batch()
+    pdb.set_trace()
+    print ('**')
