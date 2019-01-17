@@ -7,7 +7,8 @@ sys.path.append('/home/srgujar/Pointwise-segmentation/models/tf_utils')
 import pointer_sem_seg_2 as model
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 #basedir = '/home/sanket/MS_Thesis/kitti'
-basedir ='/home/srgujar/Data/training'
+#basedir ='/home/srgujar/Data/training'
+basedir ='/home/srgujar/kitti'
 sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
 import tensorflow as tf
@@ -99,7 +100,7 @@ def train(dataset_iterator, num_iteration, loss, pred):
             # pdb.set_trace()
             data, label , iter , batch_no= dataset_iterator.get_batch()
             label_ = get_one_hot_label(label)
-            if ((batch_no % 50 == 0)):
+            if ((iter % 2 == 0)and (batch_no == 0)):
                 path = "/home/srgujar/Pointwise-segmentation/saved_model/local/pointer_2_"
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
@@ -112,7 +113,7 @@ if __name__=='__main__':
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_pred, label_placeholder)
-    #train(dataset_iterator,num_iteration = 20, loss= loss_model, pred= net_pred)
-    path = "/home/srgujar/Pointwise-segmentation/saved_model/local/"
-    path += "pointer_2_0_500.ckpt"
-    infer_model(dataset_iterator, path, net_pred)
+    train(dataset_iterator,num_iteration = 50, loss= loss_model, pred= net_pred)
+    #path = "/home/srgujar/Pointwise-segmentation/saved_model/local/"
+    #path += "pointer_2_0_500.ckpt"
+    #infer_model(dataset_iterator, path, net_pred)
