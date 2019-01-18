@@ -148,7 +148,7 @@ def get_model(point_cloud, is_training, bn_decay=None):
              activation_fn=None, scope='seg/conv4', is_dist=True)
     net = tf.squeeze(net, [2])
     net_out = tf.nn.softmax(net,axis=-1,name='out')
-    pdb.set_trace()
+    #pdb.set_trace()
     return net, net_out
 
 def get_loss(pred, label):
