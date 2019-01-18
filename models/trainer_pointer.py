@@ -31,12 +31,18 @@ def infer_model(dataset_iterator, model_path, net_out):
         print ('Model is restored')
         data, label , iter , batch_no= dataset_iterator.get_batch()
         label_ = get_one_hot_label(label)
-        pred = sess.run([net_out], feed_dict = {pcl_placeholder : data,
+        counter = 0
+        while (iter == 0):
+            pred = sess.run([net_out], feed_dict = {pcl_placeholder : data,
                                        label_placeholder: label_,
                                        is_training_pl:False})
-        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/data1.npy', data)
-        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/label1.npy', label)
-        np.save('/home/srgujar/Pointwise-segmentation/results/pointer/pred1.npy', pred)
+            np.save('/home/srgujar/Pointwise-segmentation/results/pointer/data' + str(counter) + '.npy', data)
+            np.save('/home/srgujar/Pointwise-segmentation/results/pointer/label'+ str(counter) + '.npy', label)
+            np.save('/home/srgujar/Pointwise-segmentation/results/pointer/pred' + str(counter) + '.npy', pred)
+            print ('saved prediction of ' + str(counter) )
+            data, label, iter , batch_no = dataset_iterator.get_batch()
+            label_ = get_one_hot_label(label)
+            counter += 1
 
 
 def calculate_accuracy(prediction, labels):
@@ -113,7 +119,7 @@ if __name__=='__main__':
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_pred, label_placeholder)
-    train(dataset_iterator,num_iteration = 50, loss= loss_model, pred= net_pred)
-    #path = "/home/srgujar/Pointwise-segmentation/saved_model/local/"
-    #path += "pointer_2_0_500.ckpt"
-    #infer_model(dataset_iterator, path, net_pred)
+    #train(dataset_iterator,num_iteration = 50, loss= loss_model, pred= net_pred)
+    path = "/home/srgujar/Pointwise-segmentation/saved_model/local/"
+    path += "pointer_2_40_0.ckpt"
+    infer_model(dataset_iterator, path, net_pred)
