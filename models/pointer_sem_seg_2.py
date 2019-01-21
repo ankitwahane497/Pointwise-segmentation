@@ -15,8 +15,8 @@ def input_placeholder(batch_size, num_point):
     pointclouds_pl = tf.placeholder(tf.float32,
                    shape=(batch_size, num_point, 4))
     labels_pl = tf.placeholder(tf.float32,
-                shape=(batch_size, num_point,8))
-    print ('IIIDEINFIEBFUEBFUE***************************')
+                shape=(batch_size, num_point,2))
+    print ('********Training Model 2***************************')
     return pointclouds_pl, labels_pl
 
 def get_model(point_cloud, is_training, bn_decay=None):
@@ -149,7 +149,7 @@ def get_model(point_cloud, is_training, bn_decay=None):
     # net = tf_util.conv2d(net, 126, [1,1], padding='VALID', stride=[1,1],
     #          bn=True, is_training=is_training, scope='seg/conv2', is_dist=True)
     net = tf_util.dropout(net, keep_prob=0.7, is_training=is_training, scope='dp1')
-    net = tf_util.conv2d(net,8, [1,1], padding='VALID', stride=[1,1],
+    net = tf_util.conv2d(net,2, [1,1], padding='VALID', stride=[1,1],
              activation_fn=None, scope='seg/conv3', is_dist=True)
     net = tf.squeeze(net,[2])
     #pdb.set_trace()
@@ -160,7 +160,7 @@ def get_loss(pred, label):
   """ pred: B,N,13; label: B,N """
   # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=label)
   loss = tf.nn.weighted_cross_entropy_with_logits(targets = label, logits = pred,
-            pos_weight = np.array([0.2,3.0,3.0,3.0,1.0,1.0,1.0,1.0]))
+            pos_weight = np.array([0.2,60.0]))
   return tf.reduce_mean(loss)
 
 
