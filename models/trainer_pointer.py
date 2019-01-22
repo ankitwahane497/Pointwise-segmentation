@@ -53,13 +53,13 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
 
 def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_samples = 10):
     data, label , iter , batch_no= dataset_iterator.get_batch()
-    label_ = get_one_hot_label(label)
     label = make_new_class(label)
+    label_ = get_one_hot_label(label)
     counter = 0
     os.makedirs(save_model_path +'/result/epoch_' +str(iteration))
     while (counter < num_samples):
         pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
-                                       label_placeholder: label,
+                                       label_placeholder: label_,
                                        is_training_pl:False})
         a_2 = calculate_accuracy(pred, label)
         a_3 = calculate_class_accuracy(pred, label)
@@ -71,8 +71,8 @@ def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_sa
         #np.save(save_model_path + '/result/' + str(iteration) + '/pred' +str(counter) + '.npy', pred)
         print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
         data, label, iter , batch_no = dataset_iterator.get_batch()
-        label_ = get_one_hot_label(label)
         label = make_new_class(label)
+        label_ = get_one_hot_label(label)
         counter += 1
 
 
@@ -119,7 +119,7 @@ def calculate_car_accuracy(pred, label):
 
 def get_one_hot_label(label):
     shape_l = label.shape
-    one_hot = np.zeros((shape_l[0],shape_l[1],8))
+    one_hot = np.zeros((shape_l[0],shape_l[1],2))
     for j in range(shape_l[0]):
         for i in range(shape_l[1]):
             try:
@@ -142,20 +142,22 @@ def make_new_class(label):
 def train(dataset_iterator,test_iter, num_iteration, loss, pred):
     optimizer = tf.train.AdamOptimizer()
     train_op =  optimizer.minimize(loss)
-    logging.basicConfig(level=logging.DEBUG, filename="pointer.txt", filemode="a+",
+    result_repo = make_result_def('/home/srgujar/Pointwise-segmentation/results','pointer_M2')
+    logging.basicConfig(level=logging.DEBUG, filename=result_repo + "/log/log.txt", filemode="a+",
                         format="%(asctime)-15s %(message)s")
     loss_ar = []
     acc_all = []
-    result_repo = make_result_def('/home/srgujar/Pointwise-segmentation/results','pointer_M3')
+    class_acc = []
+    #result_repo = make_result_def('/home/srgujar/Pointwise-segmentation/results','pointer_M2')
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         data, label , iter , batch_no= dataset_iterator.get_batch()
         label = make_new_class(label)
-        #label_ = get_one_hot_label(label)
+        label_ = get_one_hot_label(label)
         while(iter < num_iteration):
             _, batch_loss, predict = sess.run([train_op,loss, pred],feed_dict = {pcl_placeholder : data,
-                                           label_placeholder: label,
+                                           label_placeholder: label_,
                                            is_training_pl:True})
             accuracy = calculate_accuracy(predict, label)*100
             class_accuracy = calculate_class_accuracy(predict, label)*100
@@ -166,12 +168,21 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
             logging.info(log)
             loss_ar.append(batch_loss)
             acc_all.append(accuracy)
-            # pdb.set_trace()
+            class_acc.append(class_accuracy)
             data, label , iter , batch_no= dataset_iterator.get_batch()
-            label_ = get_one_hot_label(label)
             label  = make_new_class(label)
-            if ((iter % 20 == 0)and (batch_no == 0)):
-                path = result_repo + '/checkpoints/pointer3_'
+            label_ = get_one_hot_label(label)
+
+            if(batch_no == 0):
+                batch_accuracy = np.mean(acc_all)
+                class_accuracy = np.mean(class_acc)
+                batch_loss_mean= np.mean(loss_ar)
+                log = "**** Iteration : " +  str(iter) + " loss : " + str(batch_loss_mean) + " Accuracy: " + str(batch_accuracy) +" Class Accuracy : " + str(class_accuracy) 
+                logging.info(log)
+                print (log)
+ 
+            if ((iter % 10  == 0)and (batch_no == 0)):
+                path = result_repo + '/checkpoints/pointer2__'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
                 infer_model(test_iter,sess, pred, result_repo , iter, num_samples = 10)
@@ -179,9 +190,9 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
 
 
 if __name__=='__main__':
-    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 15000)
-    dataset_iterator_test = Kitti_data_iterator(basedir, batch_size = 1, num_points = 15000)
-    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 15000)
+    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
+    dataset_iterator_test = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
+    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 10000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_out, label_placeholder)
