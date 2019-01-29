@@ -17,16 +17,16 @@ print (ind)
 frame = int(args[-3])
 
 
-a1 = np.load('/home/sanket/MS_Thesis/pointer/data'+str(frame)+'.npy')
-a2 = np.load('/home/sanket/MS_Thesis/pointer/label'+str(frame)+'.npy')
-a3 = np.load('/home/sanket/MS_Thesis/pointer/pred'+str(frame)+'.npy')[0]
+a1 = np.load('/home/sanket/MS_Thesis/pointer3/result/data'+str(frame)+'.npy')
+a2 = np.load('/home/sanket/MS_Thesis/pointer3/result/label'+str(frame)+'.npy')
+a3 = np.load('/home/sanket/MS_Thesis/pointer3/result/pred'+str(frame)+'.npy')
 
 
 def convert_one_hot_to_label(label):
     return np.argmax(label,axis  = -1)
 
 a4 = convert_one_hot_to_label(a3)
-
+# pdb.set_trace()
 def unscale_points(pcl):
     pcl[:,0] *= 40
     pcl[:,1] *= 30
@@ -43,7 +43,7 @@ if vis  == "vispcl":
 
 
 bp = birds_eye_view()
-c1  = np.reshape(a2[ind],(10000,1))
+c1  = np.reshape(a2[ind],(15000,1))
 pcl = np.hstack((a1[ind],c1))
 # pcl = unscale_points(pcl)
 p1 = bp.get_birds_eye_view(pcl)
@@ -54,7 +54,7 @@ plt.imshow(p1)
 
 
 bp1 = birds_eye_view()
-c2  = np.reshape(a4[ind],(10000,1))
+c2  = np.reshape(a4[ind],(15000,1))
 pcl2 = np.hstack((a1[ind],c2))
 p2 = bp1.get_birds_eye_view(pcl2)
 plt.subplot(1,2,2)
