@@ -48,7 +48,7 @@ def get_local_features_deep(data,knn):
 
 
 def get_nearest_neighbors_id(data, k =20):
-    data = np.squeeze(data, axis = -1)
+    data = np.squeeze(data, axis = -2)
     # tree = [ KDTree(data[i], leaf_size=2) for i in range(len(data))]
     tree = [ cKDTree(data[i]) for i in range(len(data))]
     data_ = [tree[i].query(data[i], k = k) for i in range(len(data))]

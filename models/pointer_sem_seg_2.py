@@ -151,7 +151,8 @@ def get_model(point_cloud, is_training, bn_decay=None):
     net = tf_util.dropout(net, keep_prob=0.7, is_training=is_training, scope='dp1')
     net = tf_util.conv2d(net,8, [1,1], padding='VALID', stride=[1,1],
              activation_fn=None, scope='seg/conv3', is_dist=True)
-    net = tf.squeeze(net, [2])
+    net = tf.squeeze(net,[2])
+    #pdb.set_trace()
     net_out = tf.nn.softmax(net,axis=-1,name='out')
     return net, net_out
 
