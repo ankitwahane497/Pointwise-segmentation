@@ -4,7 +4,7 @@ import glob
 import pdb
 from sklearn.model_selection import train_test_split
 sys.path.append('/home/srgujar/Pointwise-segmentation/models/tf_utils')
-import pointer_sem_seg_2 as model
+import pointer_sem_seg_4 as model
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 #basedir = '/home/sanket/MS_Thesis/kitti'
 #basedir ='/home/srgujar/Data/training'
@@ -57,6 +57,7 @@ def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_sa
     label_ = get_one_hot_label(label)
     counter = 0
     os.makedirs(save_model_path +'/result/epoch_' +str(iteration))
+    #os.makedirs(save_model_path +'/result/raw')
     while (counter < num_samples):
         pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
                                        label_placeholder: label_,
@@ -66,9 +67,9 @@ def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_sa
         a_4 = calculate_car_accuracy(pred,label)
         file_path = save_model_path + '/result/epoch_'+str(iteration) + '/' + str(counter) + '.png'
         store_results(data,label,pred,file_path)
-        #np.save(save_model_path + '/result/'+str(iteration) +'/data' + str(counter) + '.npy', data)
-        #np.save(save_model_path + '/result/' +str(iteration) +'/label'+ str(counter) + '.npy', label)
-        #np.save(save_model_path + '/result/' + str(iteration) + '/pred' +str(counter) + '.npy', pred)
+        np.save(save_model_path + '/result/epoch_'+str(iteration) +'/data' + str(counter) + '.npy', data)
+        np.save(save_model_path + '/result/epoch_' +str(iteration) +'/label'+ str(counter) + '.npy', label)
+        np.save(save_model_path + '/result/epoch_' + str(iteration) + '/pred' +str(counter) + '.npy', pred)
         print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
         data, label, iter , batch_no = dataset_iterator.get_batch()
         label = make_new_class(label)

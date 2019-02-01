@@ -30,7 +30,8 @@ def store_results(data, label,pred,file_name):
     pcl = np.hstack((data,c1))
     p1 = bp.get_birds_eye_view(pcl)
     plt.subplot(1,2,1)
-    plt.title('Ground Label')
+    plt.title('Ground Truth')
+    plt.axis('off')
     plt.imshow(p1)
 
     bp1 = birds_eye_view()
@@ -39,5 +40,6 @@ def store_results(data, label,pred,file_name):
     p2 = bp1.get_birds_eye_view(pcl2)
     plt.subplot(1,2,2)
     plt.title('Pointer')
+    plt.axis('off')
     plt.imshow(p2)
-    plt.savefig(file_name, dpi = 1000)
+    plt.savefig(file_name, dpi = 300)
