@@ -8,9 +8,11 @@ import pointer_sem_seg_4 as model
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 #basedir = '/home/sanket/MS_Thesis/kitti'
 #basedir ='/home/srgujar/Data/training'
-basedir ='/home/srgujar/kitti'
+#basedir ='/home/srgujar/kitti'
 sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
+basedir ='/home/srgujar/Data/training'
+basedir_testing  ='/home/srgujar/Data/testing'
 import tensorflow as tf
 import logging
 import os
@@ -182,17 +184,17 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
                 logging.info(log)
                 print (log)
  
-            if ((iter % 10  == 0)and (batch_no == 0)):
+            if ((iter % 3  == 0)and (batch_no == 0)):
                 path = result_repo + '/checkpoints/pointer2__'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
-                infer_model(test_iter,sess, pred, result_repo , iter, num_samples = 10)
+                infer_model(test_iter,sess, pred, result_repo , iter, num_samples = 20)
         return result_repo
 
 
 if __name__=='__main__':
     dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
-    dataset_iterator_test = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
+    dataset_iterator_test = Kitti_data_iterator(basedir_testing, batch_size = 1, num_points = 10000)
     pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 10000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
