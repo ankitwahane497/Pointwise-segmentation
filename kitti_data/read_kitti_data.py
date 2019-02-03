@@ -18,9 +18,9 @@ label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-#basedir  = '/home/sanket/MS_Thesis/kitti'
+basedir  = '/home/sanket/MS_Thesis/kitti'
 #basedir = '/home/srgujar/Data/training'
-basedir = '/home/srgujar/kitti'
+# basedir = '/home/srgujar/kitti'
 import vispy
 from vispy.scene import visuals
 
@@ -421,19 +421,45 @@ def get_frame_and_label(frame):
       # visualize_results(pcl)
       return pcl[:,:4], pcl[:,-1]
 
+def get_frame_label_and_image(frame):
+      left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
+      # pdb.set_trace()
+      velo = np.hstack((velo,np.zeros((len(velo),1))))
+      bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
+      pcl = get_pcl_class_label(velo, bb3d, label_bb)
+      pcl = filter_range_points(pcl, x_range = 40, y_range = 15)
+      # pdb.set_trace()
+      pcl = shift_points(pcl, shift_y = True, y_range = 15)
+      pcl = scale_points(pcl,y_scale = (1/30), x_scale = (1/40))
+      # visualize_results(pcl)
+      return pcl[:,:4], pcl[:,-1], left_cam
+
+
 def main_frame (frame='000008'):
   """
   Completes the plots
   """
   left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
-  bb3d = get_3D_BoundingBox(label_data, calib_data)
+  bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
   # proj, cam_img = get_lidar_projection(velo,calib_data, left_cam)
-  pcl = get_pcl_class_label(velo, bb3d)
+  pcl = get_pcl_class_label(velo, bb3d, label_bb)
   proj , cam_img = get_lidar_projection_with_labels(velo,calib_data, left_cam, on_image =True)
   pr  = birds_eye_view()
   img = pr.get_birds_eye_view(pcl)
   img = cv2.flip(img , 1)
   img = cv2.flip(img , 0)
+  # plt.subplot(1,3,1)
+  # plt.imshow(left_cam)
+  # plt.title('Camera Image')
+  # plt.subplot(1,3,2)
+  # plt.imshow(img)
+  # plt.title('Camera Image')
+  # plt.subplot(1,3,3)
+  # plt.imshow(img)
+  # plt.title('Camera Image')
+  # plt.tight_layout()
+  # plt.show()
+
   plt.subplot(2,2,1)
   plt.imshow(left_cam)
   plt.title('Camera Image')
@@ -447,7 +473,6 @@ def main_frame (frame='000008'):
   plt.imshow(img)
   plt.title('Birds eye view with labels')
   plt.show()
-
 
 
 

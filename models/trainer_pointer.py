@@ -32,9 +32,9 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
         print ('Model is restored :', model_path)
-        data, label , iter , batch_no= dataset_iterator.get_batch()
-        #label_ = get_one_hot_label(label)
-        #label = make_new_class(label)
+        data, label , cam_images, iter , batch_no= dataset_iterator.get_batch_with_images()
+        label = make_new_class(label)
+        label_ = get_one_hot_label(label)
         counter = 0
         try:
             os.makedirs(save_model_path + '/result/validation')
@@ -47,14 +47,14 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
             a_3 = calculate_class_accuracy(pred, label)
             a_4 = calculate_car_accuracy(pred,label)
             file_path = save_model_path + '/result/validation/' + str(counter) + '.png'
-            store_results(data,label,pred,file_path)
+            store_results_with_cam(data,label,pred,cam_image[0], file_path)
             np.save(save_model_path + '/result/validation/data' + str(counter) + '.npy', data)
             np.save(save_model_path + '/result/validation/label'+ str(counter) + '.npy', label)
             np.save(save_model_path + '/result/validation/pred' + str(counter) + '.npy', pred)
             print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
-            data, label, iter , batch_no = dataset_iterator.get_batch()
-            #label_ = get_one_hot_label(label)
-            #label = make_new_class(label)
+            data, label,  cam_images, iter , batch_no = dataset_iterator.get_batch_with_images()
+            label = make_new_class(label)
+            label_ = get_one_hot_label(label)
             counter += 1
 
 
@@ -107,7 +107,7 @@ def calculate_class_accuracy(prediction, labels):
             correct = np.sum(np.in1d(indx1,indx2))
             correct = (correct/ len(indx2))
             c2.append(correct)
-    if len(c2) > 0 : #checking for empty array for no class frame     
+    if len(c2) > 0 : #checking for empty array for no class frame
         return np.mean(c2)
     else:
         return 0.
@@ -185,10 +185,10 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
                 batch_accuracy = np.mean(acc_all)
                 class_accuracy = np.mean(class_acc)
                 batch_loss_mean= np.mean(loss_ar)
-                log = "**** Iteration : " +  str(iter) + " loss : " + str(batch_loss_mean) + " Accuracy: " + str(batch_accuracy) +" Class Accuracy : " + str(class_accuracy) 
+                log = "**** Iteration : " +  str(iter) + " loss : " + str(batch_loss_mean) + " Accuracy: " + str(batch_accuracy) +" Class Accuracy : " + str(class_accuracy)
                 logging.info(log)
                 print (log)
- 
+
             if ((iter % 1  == 0)and (batch_no == 0)):
                 path = result_repo + '/checkpoints/pointer2__'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
@@ -197,7 +197,7 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
         return result_repo
 
 
-    
+
 
 
 if __name__=='__main__':

@@ -3,8 +3,6 @@ import sys
 import glob
 import pdb
 from sklearn.model_selection import train_test_split
-basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-# sys.path.append('/home/sanket/MS_Thesis/Pointwise-segmentation/kitti_data')
 from read_kitti_data import *
 
 
@@ -54,6 +52,34 @@ class Kitti_data_iterator:
                 batch_labels[i,:len(pcl)] = label
                 batch_labels[len(pcl):]   = label[-1]
         return batch_data, batch_labels, self.iteration, self.batch_pointer
+
+    def get_batch_with_images(self):
+        batch_data   = np.zeros((self.batch_size,self.num_points, 4))
+        batch_labels = np.zeros((self.batch_size,self.num_points))
+        batch_images = []
+        # batch_data = []
+        # batch_labels = []
+        self.batch_pointer += self.batch_size
+        if (self.batch_pointer > (len(self.train_data) - self.batch_size)):
+            #shuffle
+            self.batch_pointer = 0
+            self.iteration += 1
+        for i in range(self.batch_size):
+            pcl, label , img= get_frame_label_and_image(self.train_data[self.batch_pointer + i])
+            if (len(pcl) >= self.num_points):
+                indx = np.random.choice(len(pcl), self.num_points, replace=False)
+                # batch_data[i] = pcl[:self.num_points]
+                # batch_labels[i] = label[:self.num_points]
+                batch_data[i] = pcl[indx]
+                batch_labels[i] = label[indx]
+            else:
+                batch_data[i,:len(pcl)] = pcl
+                batch_data[len(pcl):]   = pcl[-1]
+                batch_labels[i,:len(pcl)] = label
+                batch_labels[len(pcl):]   = label[-1]
+            batch_images.append(img)
+        return batch_data, batch_labels, batch_images,self.iteration, self.batch_pointer
+
 
 if __name__=='__main__':
     data = Kitti_data_iterator(basedir)
