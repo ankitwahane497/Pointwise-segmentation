@@ -13,9 +13,9 @@ sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
 
 def input_placeholder(batch_size, num_point):
     pointclouds_pl = tf.placeholder(tf.float32,
-                   shape=(batch_size, num_point, 4))
+                   shape=(batch_size, num_point, 4),name = 'pcl_placeholder')
     labels_pl = tf.placeholder(tf.float32,
-                shape=(batch_size, num_point,2))
+                shape=(batch_size, num_point,2),name ='label_placeholder')
     print ('********Training Model 2***************************')
     return pointclouds_pl, labels_pl
 
@@ -155,9 +155,9 @@ def get_model(point_cloud, is_training, bn_decay=None):
     net = tf_util.dropout(net, keep_prob=0.5, is_training=is_training, scope='dp1')
     net = tf_util.conv2d(net,2, [1,1], padding='VALID', stride=[1,1],
              activation_fn=None, scope='seg/conv4', is_dist=True)
-    net = tf.squeeze(net,[2])
+    net = tf.squeeze(net,[2],name ='net_pred')
     #pdb.set_trace()
-    net_out = tf.nn.softmax(net,axis=-1,name='out')
+    net_out = tf.nn.softmax(net,axis=-1,name='net_pred_softmax')
     return net, net_out
 
 def get_loss(pred, label):

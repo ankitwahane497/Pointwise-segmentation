@@ -33,23 +33,28 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
         saver.restore(sess, model_path)
         print ('Model is restored :', model_path)
         data, label , iter , batch_no= dataset_iterator.get_batch()
-        label_ = get_one_hot_label(label)
-        label = make_new_class(label)
+        #label_ = get_one_hot_label(label)
+        #label = make_new_class(label)
         counter = 0
+        try:
+            os.makedirs(save_model_path + '/result/validation')
+        except:
+            print ('File already exists')
         while (iter == 0):
             pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
-                                       label_placeholder: label_,
                                        is_training_pl:False})
             a_2 = calculate_accuracy(pred, label)
             a_3 = calculate_class_accuracy(pred, label)
             a_4 = calculate_car_accuracy(pred,label)
-            np.save(save_model_path + '/result/data' + str(counter) + '.npy', data)
-            np.save(save_model_path + '/result/label'+ str(counter) + '.npy', label)
-            np.save(save_model_path + '/result/pred' + str(counter) + '.npy', pred)
+            file_path = save_model_path + '/result/validation/' + str(counter) + '.png'
+            store_results(data,label,pred,file_path)
+            np.save(save_model_path + '/result/validation/data' + str(counter) + '.npy', data)
+            np.save(save_model_path + '/result/validation/label'+ str(counter) + '.npy', label)
+            np.save(save_model_path + '/result/validation/pred' + str(counter) + '.npy', pred)
             print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
             data, label, iter , batch_no = dataset_iterator.get_batch()
-            label_ = get_one_hot_label(label)
-            label = make_new_class(label)
+            #label_ = get_one_hot_label(label)
+            #label = make_new_class(label)
             counter += 1
 
 
@@ -184,12 +189,15 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
                 logging.info(log)
                 print (log)
  
-            if ((iter % 3  == 0)and (batch_no == 0)):
+            if ((iter % 1  == 0)and (batch_no == 0)):
                 path = result_repo + '/checkpoints/pointer2__'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
-                infer_model(test_iter,sess, pred, result_repo , iter, num_samples = 20)
+                infer_model(test_iter,sess, pred, result_repo , iter, num_samples = 100)
         return result_repo
+
+
+    
 
 
 if __name__=='__main__':
@@ -199,7 +207,7 @@ if __name__=='__main__':
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_out, label_placeholder)
-    result_repo = train(dataset_iterator,dataset_iterator_test,num_iteration = 200, loss= loss_model, pred= net_pred)
-    #path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M3_1_19_15_36"
-    #model_path = path +  "/checkpoints/pointer3_50_0.ckpt"
-    #infer_model(dataset_iterator, model_path, net_pred,path)
+    #result_repo = train(dataset_iterator,dataset_iterator_test,num_iteration = 200, loss= loss_model, pred= net_pred)
+    path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M2_2_1_11_57"
+    model_path = path +  "/checkpoints/pointer2__3_0.ckpt"
+    infer_model_trained(dataset_iterator_test, model_path, net_pred,path)
