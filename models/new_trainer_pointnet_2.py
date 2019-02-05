@@ -4,34 +4,25 @@ import glob
 import pdb
 from sklearn.model_selection import train_test_split
 sys.path.append('/home/srgujar/Pointwise-segmentation/models/tf_utils')
-import pointer_sem_seg_3 as model
-# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-#basedir = '/home/sanket/MS_Thesis/kitti'
-#basedir ='/home/srgujar/Data/training'
-basedir ='/home/srgujar/kitti'
-sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
+import pointnet2_sem_seg as model
+basedir = '/home/sanket/MS_Thesis/kitti'
+sys.path.append('/home/sanket/MS_Thesis/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
 import tensorflow as tf
 import logging
 import os
 from result_dir import *
-# os.environ['CUDA_VISIBLE_DEVICES'] = ''
-#
-# if tf.test.gpu_device_name():
-#     print('GPU found')
-# else:
-#     print("No GPU found")
 
-
-def infer_model(dataset_iterator, model_path, net_out,save_model_path):
+def infer_model(dataset_iterator, model_path, net_out,save_model_path = None):
     with tf.Session() as sess:
-        # tf.reset_default_graph()
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
         print ('Model is restored :', model_path)
         data, label , iter , batch_no= dataset_iterator.get_batch()
-        label_ = get_one_hot_label(label)
+        data = data[:,:,:3]
         counter = 0
+        accuracy = []
+        car_acc = []
         while (iter == 0):
             pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
                                        label_placeholder: label,
@@ -39,13 +30,18 @@ def infer_model(dataset_iterator, model_path, net_out,save_model_path):
             a_2 = calculate_accuracy(pred, label)
             a_3 = calculate_class_accuracy(pred, label)
             a_4 = calculate_car_accuracy(pred,label)
-            np.save(save_model_path + '/result/data' + str(counter) + '.npy', data)
-            np.save(save_model_path + '/result/label'+ str(counter) + '.npy', label)
-            np.save(save_model_path + '/result/pred' + str(counter) + '.npy', pred)
+            # np.save(save_model_path + '/result/data' + str(counter) + '.npy', data)
+            # np.save(save_model_path + '/result/label'+ str(counter) + '.npy', label)
+            # np.save(save_model_path + '/result/pred' + str(counter) + '.npy', pred)
             print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
             data, label, iter , batch_no = dataset_iterator.get_batch()
-            label_ = get_one_hot_label(label)
+            car_acc.append(a_4)
+            accuracy.append(a_2)
+            data = data[:,:,:3]
+            # label_ = get_one_hot_label(label)
             counter += 1
+        pdb.set_trace()
+        print('....')
 
 
 def calculate_accuracy(prediction, labels):
@@ -137,12 +133,12 @@ def train(dataset_iterator, num_iteration, loss, pred):
 
 
 if __name__=='__main__':
-    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 15000)
-    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 15000)
+    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 60000)
+    pcl_placeholder, label_placeholder = model.placeholder_inputs(batch_size =1,num_point = 60000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
-    net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
+    net_out, end_points= model.get_model(pcl_placeholder, is_training = is_training_pl, num_class = 8)
     loss_model = model.get_loss(net_out, label_placeholder)
     #result_repo = train(dataset_iterator,num_iteration = 50, loss= loss_model, pred= net_pred)
-    path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M3_1_19_15_3"
-    model_path = path +  "/checkpoints/pointer3_45_0.ckpt"
-    infer_model(dataset_iterator, model_path, net_out,path)
+    path = "/home/sanket/MS_Thesis/Pointwise-segmentation/saved_model/"
+    path += "pointnet2_18.ckpt"
+    infer_model(dataset_iterator, path, net_out)

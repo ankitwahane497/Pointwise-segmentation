@@ -24,7 +24,9 @@ def get_model(point_cloud, is_training, bn_decay=None):
     num_point = point_cloud.get_shape()[1].value
     input_image = tf.expand_dims(point_cloud, -1)
 
-    k = 3s0
+    k = 30
+    adj = tf_util.pairwise_distance(point_cloud)
+    nn_idx = tf_util.knn(adj, k=k) # (batch, num_points, k)
     edge_feature = tf_util.get_edge_feature(input_image, nn_idx=nn_idx, k=k)
 
     out1 = tf_util.conv2d(edge_feature, 64, [1,1],

@@ -4,48 +4,43 @@ import glob
 import pdb
 from sklearn.model_selection import train_test_split
 sys.path.append('/home/srgujar/Pointwise-segmentation/models/tf_utils')
-import pointer_sem_seg_3 as model
-# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-#basedir = '/home/sanket/MS_Thesis/kitti'
-#basedir ='/home/srgujar/Data/training'
-basedir ='/home/srgujar/kitti'
-sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
+import edge_conv_semantic_seg as model
+basedir = '/home/sanket/MS_Thesis/kitti'
+sys.path.append('/home/sanket/MS_Thesis/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
 import tensorflow as tf
 import logging
 import os
 from result_dir import *
-# os.environ['CUDA_VISIBLE_DEVICES'] = ''
-#
-# if tf.test.gpu_device_name():
-#     print('GPU found')
-# else:
-#     print("No GPU found")
 
-
-def infer_model(dataset_iterator, model_path, net_out,save_model_path):
+def infer_model(dataset_iterator, model_path, net_out,save_model_path = None):
     with tf.Session() as sess:
-        # tf.reset_default_graph()
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
         print ('Model is restored :', model_path)
         data, label , iter , batch_no= dataset_iterator.get_batch()
-        label_ = get_one_hot_label(label)
+        # data = data[:,:,:3]
         counter = 0
+        accuracy = []
+        car_acc = []
         while (iter == 0):
             pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
-                                       label_placeholder: label,
                                        is_training_pl:False})
             a_2 = calculate_accuracy(pred, label)
             a_3 = calculate_class_accuracy(pred, label)
             a_4 = calculate_car_accuracy(pred,label)
-            np.save(save_model_path + '/result/data' + str(counter) + '.npy', data)
-            np.save(save_model_path + '/result/label'+ str(counter) + '.npy', label)
-            np.save(save_model_path + '/result/pred' + str(counter) + '.npy', pred)
+            # np.save(save_model_path + '/result/data' + str(counter) + '.npy', data)
+            # np.save(save_model_path + '/result/label'+ str(counter) + '.npy', label)
+            # np.save(save_model_path + '/result/pred' + str(counter) + '.npy', pred)
             print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
             data, label, iter , batch_no = dataset_iterator.get_batch()
-            label_ = get_one_hot_label(label)
+            car_acc.append(a_4)
+            accuracy.append(a_2)
+            # data = data[:,:,:3]
+            # label_ = get_one_hot_label(label)
             counter += 1
+        pdb.set_trace()
+        print('....')
 
 
 def calculate_accuracy(prediction, labels):
@@ -103,11 +98,11 @@ def get_one_hot_label(label):
 def train(dataset_iterator, num_iteration, loss, pred):
     optimizer = tf.train.AdamOptimizer()
     train_op =  optimizer.minimize(loss)
-    logging.basicConfig(level=logging.DEBUG, filename="pointer.txt", filemode="a+",
-                        format="%(asctime)-15s %(message)s")
     loss_ar = []
     acc_all = []
-    result_repo = make_result_def('/home/srgujar/Pointwise-segmentation/results','pointer_M3')
+    result_repo = make_result_def('/home/sanket/MS_Thesis/results_edge','Edge_conv')
+    logging.basicConfig(level=logging.DEBUG, filename=result_repo + "/log/edge.txt", filemode="a+",
+                        format="%(asctime)-15s %(message)s")
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
@@ -115,7 +110,7 @@ def train(dataset_iterator, num_iteration, loss, pred):
         label_ = get_one_hot_label(label)
         while(iter < num_iteration):
             _, batch_loss, predict = sess.run([train_op,loss, pred],feed_dict = {pcl_placeholder : data,
-                                           label_placeholder: label,
+                                           label_placeholder: label_,
                                            is_training_pl:True})
             accuracy = calculate_accuracy(predict, label)*100
             class_accuracy = calculate_class_accuracy(predict, label)*100
@@ -130,19 +125,21 @@ def train(dataset_iterator, num_iteration, loss, pred):
             data, label , iter , batch_no= dataset_iterator.get_batch()
             label_ = get_one_hot_label(label)
             if ((iter % 5 == 0)and (batch_no == 0)):
-                path = result_repo + '/checkpoints/pointer3_'
+                path = result_repo + '/checkpoints/edge_conv'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
         return result_repo
 
 
 if __name__=='__main__':
-    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 15000)
-    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 15000)
+    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
+    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 10000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
-    net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
+    net_out, end_points= model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_out, label_placeholder)
-    #result_repo = train(dataset_iterator,num_iteration = 50, loss= loss_model, pred= net_pred)
-    path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M3_1_19_15_3"
-    model_path = path +  "/checkpoints/pointer3_45_0.ckpt"
-    infer_model(dataset_iterator, model_path, net_out,path)
+    # result_repo = train(dataset_iterator,num_iteration = 200, loss= loss_model, pred= net_out)
+    # path = "/home/sanket/MS_Thesis/Pointwise-segmentation/saved_model/"
+    path = "/home/sanket/MS_Thesis/results_edge/Edge_conv_1_29_16_36/checkpoints/"
+    # path += "edge_conv_new_3.ckpt"
+    path += "edge_conv190_0.ckpt"
+    infer_model(dataset_iterator, path, net_out)

@@ -4,7 +4,7 @@ import time
 import numpy as np
 import os
 import sys
-import tf_util
+import tf_utils.pointnet_tf_util as tf_util
 
 def input_placeholder(batch_size, numpoints):
     pcl_pl   = tf.placeholder(tf.float32, shape = (batch_size,numpoints,3))
