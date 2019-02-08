@@ -18,8 +18,9 @@ label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-basedir  = '/home/sanket/MS_Thesis/kitti'
-#basedir = '/home/srgujar/Data/training'
+#basedir  = '/home/sanket/MS_Thesis/kitti'
+basedir = '/home/srgujar/Data/training'
+#basedir = '/home/srgujar/Data/testing'
 # basedir = '/home/srgujar/kitti'
 import vispy
 from vispy.scene import visuals

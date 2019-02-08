@@ -47,7 +47,7 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
             a_3 = calculate_class_accuracy(pred, label)
             a_4 = calculate_car_accuracy(pred,label)
             file_path = save_model_path + '/result/validation/' + str(counter) + '.png'
-            store_results_with_cam(data,label,pred,cam_image[0], file_path)
+            store_results_with_cam(data,label,pred,cam_images[0], file_path)
             np.save(save_model_path + '/result/validation/data' + str(counter) + '.npy', data)
             np.save(save_model_path + '/result/validation/label'+ str(counter) + '.npy', label)
             np.save(save_model_path + '/result/validation/pred' + str(counter) + '.npy', pred)
