@@ -13,19 +13,25 @@ import argparse
 import numpy as np
 import copy
 from utils import *
+from instance import *
 left_cam_rgb= 'image_2'
 label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
+
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
+
 basedir  = '/home/sanket/MS_Thesis/kitti'
+
 #basedir = '/home/srgujar/Data/training'
 # basedir = '/home/srgujar/kitti'
+
 import vispy
 from vispy.scene import visuals
 
 
 from birds_eye_view_projection import birds_eye_view
+from instance_birds_projection import instance_birds_eye_view
 
 def loadKittiFiles (frame) :
   '''
@@ -217,22 +223,6 @@ def get_pcl_class_label(pcl,Bb, label_bb):
         pcl[coord,-1] = label_bb[i]
     return pcl
 
-def get_pcl_instance_labels(pcl,Bb):
-    pcl[:,-1] = 0
-    new_pcl = np.zeros((len(pcl),8))
-    new_pcl[:,:3] = pcl[:,:3]
-    for i in range(len(Bb)):
-        b1 = Bb[i]
-        x_max , x_min = max(b1[:,0]), min(b1[:,0])
-        y_max , y_min = max(b1[:,1]), min(b1[:,1])
-        z_max , z_min = max(b1[:,2]), min(b1[:,2])
-        coord = np.where(((new_pcl[:,0] > x_min) & (new_pcl[:,0] < x_max))&
-                        ((new_pcl[:,1] > y_min) & (new_pcl[:,1] < y_max)))
-        new_pcl[coord,-1] = i+1
-        # new_pcl[coord,3:6] = (x_max+x_min)/2, (y_max+y_min)/2 , (z_max+z_min)/2
-        new_pcl[coord,3:6] = np.mean(b1[:,0]), np.mean(b1[:,1]) , 0
-    # pdb.set_trace()
-    return new_pcl
 
 
 def cart_to_hom(pcl):
@@ -292,7 +282,8 @@ def get_lidar_projection(pcl,calib, left_cam_image, on_image = True):
         try:
             proj_img[int(np.round(img_pts_fov[i,0])),int(np.round(img_pts_fov[i,1])),0] = 1
         except:
-            print (img_labels[i])
+            # print (img_labels[i])
+            pass
 
     if on_image:
         pcl_fov_rect = pcl_to_rect(pcl_fov,calib)
@@ -442,38 +433,39 @@ def main_frame (frame='000008'):
   left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
   bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
   # proj, cam_img = get_lidar_projection(velo,calib_data, left_cam)
-  pcl = get_pcl_class_label(velo, bb3d, label_bb)
-  proj , cam_img = get_lidar_projection_with_labels(velo,calib_data, left_cam, on_image =True)
-  pr  = birds_eye_view()
-  img = pr.get_birds_eye_view(pcl)
-  img = cv2.flip(img , 1)
-  img = cv2.flip(img , 0)
-  # plt.subplot(1,3,1)
-  # plt.imshow(left_cam)
-  # plt.title('Camera Image')
-  # plt.subplot(1,3,2)
-  # plt.imshow(img)
-  # plt.title('Camera Image')
-  # plt.subplot(1,3,3)
-  # plt.imshow(img)
-  # plt.title('Camera Image')
-  # plt.tight_layout()
-  # plt.show()
+  pcl      = get_pcl_class_label(velo, bb3d, label_bb)
+  it_label = get_pcl_instance_labels(pcl, bb3d)
+  pr2  = instance_birds_eye_view()
+  sem_img, inst_img = pr2.get_birds_eye_view(it_label)
+  sem_img = convert_image_plot(sem_img)
+  inst_img= convert_image_plot(inst_img)
 
-  plt.subplot(2,2,1)
+  plt.subplot(1,3,1)
   plt.imshow(left_cam)
   plt.title('Camera Image')
-  plt.subplot(2,2,2)
-  plt.imshow(proj)
-  plt.title('LiDAR Front view projection with labels')
-  plt.subplot(2,2,3)
-  plt.imshow(cam_img)
-  plt.title('LiDAR Front view projection with labels on Image')
-  plt.subplot(2,2,4)
-  plt.imshow(img)
-  plt.title('Birds eye view with labels')
+  plt.subplot(1,3,2)
+  plt.imshow(sem_img)
+  plt.title('Semantic')
+  plt.subplot(1,3,3)
+  plt.imshow(inst_img)
+  plt.title('Instance Segmentation')
+  plt.tight_layout()
   plt.show()
 
+  # plt.subplot(2,2,1)
+  # plt.imshow(left_cam)
+  # plt.title('Camera Image')
+  # plt.subplot(2,2,2)
+  # plt.imshow(proj)
+  # plt.title('LiDAR Front view projection with labels')
+  # plt.subplot(2,2,3)
+  # plt.imshow(cam_img)
+  # plt.title('LiDAR Front view projection with labels on Image')
+  # plt.subplot(2,2,4)
+  # plt.imshow(img)
+  # plt.title('Birds eye view with labels')
+  # plt.show()
+  #
 
 
 def convert_image_plot(img):

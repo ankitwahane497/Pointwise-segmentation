@@ -4,6 +4,7 @@ import glob
 import pdb
 from sklearn.model_selection import train_test_split
 from read_kitti_data import *
+from cloud_clustering import *
 
 
 
@@ -17,6 +18,8 @@ class Kitti_data_iterator:
         self.split_training_and_testing()
         self.n_batches = int(len(self.train_data)/self.batch_size)
         self.iteration = 0
+        self.num_clusters  = 10
+        self.num_cluster_samples = 2000
         # p1,p2 = self.get_batch()
         # pdb.set_trace()
 
@@ -29,33 +32,26 @@ class Kitti_data_iterator:
                                             test_size = 0.2)
 
     def get_batch(self):
-        batch_data   = np.zeros((self.batch_size,self.num_points, 4))
-        batch_labels = np.zeros((self.batch_size,self.num_points))
-        # batch_data = []
-        # batch_labels = []
+        batch_data   = np.zeros((self.batch_size,self.num_clusters,self.num_cluster_samples, 4))
+        batch_labels = np.zeros((self.batch_size,self.num_clusters,self.num_cluster_samples))
         self.batch_pointer += self.batch_size
         if (self.batch_pointer > (len(self.train_data) - self.batch_size)):
             #shuffle
             self.batch_pointer = 0
             self.iteration += 1
         for i in range(self.batch_size):
-            pcl, label = get_frame_and_label(self.train_data[self.batch_pointer + i])
-            if (len(pcl) >= self.num_points):
-                indx = np.random.choice(len(pcl), self.num_points, replace=False)
-                # batch_data[i] = pcl[:self.num_points]
-                # batch_labels[i] = label[:self.num_points]
-                batch_data[i] = pcl[indx]
-                batch_labels[i] = label[indx]
-            else:
-                batch_data[i,:len(pcl)] = pcl
-                batch_data[len(pcl):]   = pcl[-1]
-                batch_labels[i,:len(pcl)] = label
-                batch_labels[len(pcl):]   = label[-1]
+            pcl, label , img= get_frame_label_and_image(self.train_data[self.batch_pointer + i])
+            pcl = np.concatenate((pcl,np.reshape(label,(-1,1))), axis  =-1)
+            pcl = fix_samples(pcl, num_samples = self.num_points)
+            pcl = get_Gaussian_labels(pcl,self.num_clusters, self.num_points )
+            pcl_cluster = get_cluster(pcl,self.num_clusters, self.num_cluster_samples)
+            batch_data[i] = pcl_cluster[:,:,:4]
+            batch_labels[i] = pcl_cluster[:,:,-1]
         return batch_data, batch_labels, self.iteration, self.batch_pointer
 
     def get_batch_with_images(self):
-        batch_data   = np.zeros((self.batch_size,self.num_points, 4))
-        batch_labels = np.zeros((self.batch_size,self.num_points))
+        batch_data   = np.zeros((self.batch_size,self.num_clusters,self.num_cluster_samples, 4))
+        batch_labels = np.zeros((self.batch_size,self.num_clusters,self.num_cluster_samples))
         batch_images = []
         # batch_data = []
         # batch_labels = []
@@ -66,21 +62,20 @@ class Kitti_data_iterator:
             self.iteration += 1
         for i in range(self.batch_size):
             pcl, label , img= get_frame_label_and_image(self.train_data[self.batch_pointer + i])
-            if (len(pcl) >= self.num_points):
-                indx = np.random.choice(len(pcl), self.num_points, replace=False)
-                # batch_data[i] = pcl[:self.num_points]
-                # batch_labels[i] = label[:self.num_points]
-                batch_data[i] = pcl[indx]
-                batch_labels[i] = label[indx]
-            else:
-                batch_data[i,:len(pcl)] = pcl
-                batch_data[len(pcl):]   = pcl[-1]
-                batch_labels[i,:len(pcl)] = label
-                batch_labels[len(pcl):]   = label[-1]
+            pcl = np.concatenate((pcl,np.reshape(label,(-1,1))), axis  =-1)
+            pcl = fix_samples(pcl, num_samples = self.num_points)
+            pcl = get_Gaussian_labels(pcl,self.num_clusters, self.num_points )
+            pcl_cluster = get_cluster(pcl,self.num_clusters, self.num_cluster_samples)
+            batch_data[i] = pcl_cluster[:,:,:4]
+            batch_labels[i] = pcl_cluster[:,:,-1]
             batch_images.append(img)
         return batch_data, batch_labels, batch_images,self.iteration, self.batch_pointer
 
 
 if __name__=='__main__':
-    data = Kitti_data_iterator(basedir)
+    data = Kitti_data_iterator(basedir,batch_size = 2 , num_points = 10000)
     data.get_training_files()
+    a1 , b1 ,c1, d1 = data.get_batch()
+    # a1 , b1 ,c1, d ,e = data.get_batch_with_images()
+    pdb.set_trace()
+    print ('frnfinfi')
