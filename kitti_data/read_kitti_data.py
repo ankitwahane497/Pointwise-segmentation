@@ -19,18 +19,9 @@ label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 
-# basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
-<<<<<<< HEAD
-#basedir  = '/home/sanket/MS_Thesis/kitti'
 basedir = '/home/srgujar/Data/training'
 #basedir = '/home/srgujar/Data/testing'
-=======
-
-basedir  = '/home/sanket/MS_Thesis/kitti'
-
 #basedir = '/home/srgujar/Data/training'
->>>>>>> 1c4652b0ef7e0382a55ee565c817a515ce4e1f1d
-# basedir = '/home/srgujar/kitti'
 
 import vispy
 from vispy.scene import visuals

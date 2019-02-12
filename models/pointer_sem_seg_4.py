@@ -25,10 +25,11 @@ def get_model(point_cloud, is_training, bn_decay=None):
     num_point = point_cloud.get_shape()[1].value
     input_image = tf.expand_dims(point_cloud, -2)
 
-    k = 30
+    k = 10
     nearest_pts_id = tf.py_func(pointer_util.get_nearest_neighbors_id,[input_image,k],tf.int32)
     # pointer_util.get_nearest_neighbors_id(input_image,k)
-    nearest_pts_id = tf.reshape(nearest_pts_id, (num_point,k))
+    # pdb.set_trace()
+    nearest_pts_id = tf.reshape(nearest_pts_id, (batch_size, num_point,k))
     #pdb.set_trace()
 
     global_edge_features = tf.py_func(pointer_util.get_global_features,[input_image,nearest_pts_id],tf.float32)

@@ -16,7 +16,7 @@ def global_nearest_neighbors_features(data, k = 20):
 
 
 def get_global_features(data,knn):
-    nn_pts = [data[i][knn] for i in range(len(data))]
+    nn_pts = [np.squeeze(data[i][knn[i]],axis = -2) for i in range(len(data))]
     nn_pts =  np.array(nn_pts)
     if nn_pts.shape[-1] == 1:
         nn_pts = np.squeeze(nn_pts , axis  = -1)
@@ -30,7 +30,7 @@ def get_global_features_deep(data, knn):
 
 def get_local_features(data,knn):
     #pdb.set_trace()
-    nn_pts = [data[i][:,np.newaxis] - data[i][knn]  for i in range(len(data))]
+    nn_pts = [np.repeat(data[i],10,axis =-2) - np.squeeze(data[i][knn[i]],axis =-2)  for i in range(len(data))]
     #nn_pts = [data[i] - data[i][knn]  for i in range(len(data))]
     nn_pts =  np.array(nn_pts)
     if nn_pts.shape[-1] == 1:

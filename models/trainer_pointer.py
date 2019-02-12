@@ -18,12 +18,6 @@ import logging
 import os
 from result_dir import *
 from store_result import *
-# os.environ['CUDA_VISIBLE_DEVICES'] = ''
-#
-# if tf.test.gpu_device_name():
-#     print('GPU found')
-# else:
-#     print("No GPU found")
 
 
 def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
@@ -89,7 +83,7 @@ def calculate_accuracy(prediction, labels):
     prediction = np.argmax(prediction, axis = -1 )
     correct = np.sum(prediction == labels)
     #pdb.set_trace()
-    return (correct/ len(prediction[0]))
+    return (correct/ (len(prediction)*len(prediction[0])))
 
 def calculate_class_accuracy(prediction, labels):
     prediction = np.argmax(prediction, axis = -1 )
@@ -108,7 +102,7 @@ def calculate_class_accuracy(prediction, labels):
             correct = (correct/ len(indx2))
             c2.append(correct)
     if len(c2) > 0 : #checking for empty array for no class frame
-        return np.mean(c2)
+        return (np.mean(c2)/10.)
     else:
         return 0.
 
@@ -121,8 +115,8 @@ def calculate_car_accuracy(pred, label):
         return 0.
     else:
         correct = np.sum(np.in1d(c1,c2))
-        correct = (correct/ len(c2))
-        return correct
+        correct = (correct/ (len(c2)))
+        return correct/10.
 
 
 def get_one_hot_label(label):
@@ -161,8 +155,11 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         data, label , iter , batch_no= dataset_iterator.get_batch()
+        data = data[0]
+        label = label[0]
         label = make_new_class(label)
         label_ = get_one_hot_label(label)
+        #pdb.set_trace()
         while(iter < num_iteration):
             _, batch_loss, predict = sess.run([train_op,loss, pred],feed_dict = {pcl_placeholder : data,
                                            label_placeholder: label_,
@@ -178,6 +175,8 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
             acc_all.append(accuracy)
             class_acc.append(class_accuracy)
             data, label , iter , batch_no= dataset_iterator.get_batch()
+            data   = data[0]
+            label  = label[0]
             label  = make_new_class(label)
             label_ = get_one_hot_label(label)
 
@@ -203,11 +202,11 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
 if __name__=='__main__':
     dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
     dataset_iterator_test = Kitti_data_iterator(basedir_testing, batch_size = 1, num_points = 10000)
-    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =1,num_point = 10000)
+    pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =10,num_point = 2000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)
     loss_model = model.get_loss(net_out, label_placeholder)
-    #result_repo = train(dataset_iterator,dataset_iterator_test,num_iteration = 200, loss= loss_model, pred= net_pred)
-    path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M2_2_1_11_57"
-    model_path = path +  "/checkpoints/pointer2__3_0.ckpt"
-    infer_model_trained(dataset_iterator_test, model_path, net_pred,path)
+    result_repo = train(dataset_iterator,dataset_iterator_test,num_iteration = 200, loss= loss_model, pred= net_pred)
+    #path  = "/home/srgujar/Pointwise-segmentation/results/pointer_M2_2_1_11_57"
+    #model_path = path +  "/checkpoints/pointer2__3_0.ckpt"
+    #infer_model_trained(dataset_iterator_test, model_path, net_pred,path)
