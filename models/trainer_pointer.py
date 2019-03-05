@@ -8,10 +8,11 @@ import pointer_sem_seg_4 as model
 # basedir = '/media/sanket/My Passport/Sanket/Kitti/training'
 #basedir = '/home/sanket/MS_Thesis/kitti'
 #basedir ='/home/srgujar/Data/training'
-#basedir ='/home/srgujar/kitti'
+basedir ='/home/srgujar/kitti'
 sys.path.append('/home/srgujar/Pointwise-segmentation/kitti_data')
 from dataset_iterator import Kitti_data_iterator
-basedir ='/home/srgujar/Data/training'
+basedir ='/home/srgujar/kitti'
+#basedir ='/home/srgujar/Data/training'
 basedir_testing  ='/home/srgujar/Data/testing'
 import tensorflow as tf
 import logging
@@ -54,6 +55,8 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
 
 def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_samples = 10):
     data, label , iter , batch_no= dataset_iterator.get_batch()
+    data = data[0]
+    label = label[0]
     label = make_new_class(label)
     label_ = get_one_hot_label(label)
     counter = 0
@@ -73,6 +76,8 @@ def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_sa
         np.save(save_model_path + '/result/epoch_' + str(iteration) + '/pred' +str(counter) + '.npy', pred)
         print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
         data, label, iter , batch_no = dataset_iterator.get_batch()
+        data = data[0]
+        label = label[0]
         label = make_new_class(label)
         label_ = get_one_hot_label(label)
         counter += 1
@@ -188,7 +193,7 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
                 logging.info(log)
                 print (log)
 
-            if ((iter % 1  == 0)and (batch_no == 0)):
+            if ((iter % 10  == 0)and (batch_no == 0)):
                 path = result_repo + '/checkpoints/pointer2__'
                 save_path = saver.save(sess, path +str(iter) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
@@ -200,8 +205,8 @@ def train(dataset_iterator,test_iter, num_iteration, loss, pred):
 
 
 if __name__=='__main__':
-    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 10000)
-    dataset_iterator_test = Kitti_data_iterator(basedir_testing, batch_size = 1, num_points = 10000)
+    dataset_iterator = Kitti_data_iterator(basedir, batch_size = 1, num_points = 20000)
+    dataset_iterator_test = Kitti_data_iterator(basedir, batch_size = 1, num_points = 20000)
     pcl_placeholder, label_placeholder = model.input_placeholder(batch_size =10,num_point = 2000)
     is_training_pl = tf.placeholder(tf.bool, shape=())
     net_out, net_pred = model.get_model(pcl_placeholder, is_training = is_training_pl)

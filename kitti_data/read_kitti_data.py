@@ -19,7 +19,8 @@ label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 
-basedir = '/home/srgujar/Data/training'
+basedir ='/home/srgujar/kitti'
+#basedir = '/home/srgujar/Data/training'
 #basedir = '/home/srgujar/Data/testing'
 #basedir = '/home/srgujar/Data/training'
 
