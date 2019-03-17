@@ -19,11 +19,9 @@ label = 'label_2'
 velodyne = 'velodyne'
 calib = 'calib'
 
-basedir ='/home/srgujar/kitti'
+# basedir ='/home/srgujar/kitti'
 #basedir = '/home/srgujar/Data/training'
-#basedir = '/home/srgujar/Data/testing'
-#basedir = '/home/srgujar/Data/training'
-
+basedir = '/home/sanket/MS_Thesis/kitti'
 import vispy
 from vispy.scene import visuals
 
@@ -424,10 +422,41 @@ def get_frame_label_and_image(frame):
       return pcl[:,:4], pcl[:,-1], left_cam
 
 
+def get_instance_vector_frame_and_label(frame):
+    left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
+    bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
+    pcl      = get_pcl_class_label(velo, bb3d, label_bb)
+    pcl = get_pcl_instance_labels(pcl, bb3d)
+    pcl = filter_range_points(pcl, x_range = 40, y_range = 15)
+    pcl = shift_points_with_instance(pcl, shift_y = True, y_range = 15)
+    pcl = scale_points_with_instance(pcl,y_scale = (1/30), x_scale = (1/40))
+    # visualize_instance(pcl  , left_cam)
+    return pcl[:,:4], pcl[:,4:-1]
+
+def visualize_instance(it_label, left_cam):
+    pr2  = instance_birds_eye_view()
+    sem_img, inst_img = pr2.get_birds_eye_view(it_label,shift_pcl = False)
+    sem_img = convert_image_plot(sem_img)
+    inst_img= convert_image_plot(inst_img)
+    plt.subplot(1,3,1)
+    plt.imshow(left_cam)
+    plt.title('Camera Image')
+    plt.subplot(1,3,2)
+    plt.imshow(sem_img)
+    plt.title('Semantic')
+    plt.subplot(1,3,3)
+    plt.imshow(inst_img)
+    plt.title('Instance Segmentation')
+    plt.tight_layout()
+    plt.show()
+
+
+
 def main_frame (frame='000008'):
   """
   Completes the plots
   """
+  # p1,p2 = get_instance_vector_frame_and_label(frame)
   left_cam, velo, label_data, calib_data = loadKittiFiles(frame)
   bb3d, label_bb = get_3D_BoundingBox(label_data, calib_data)
   # proj, cam_img = get_lidar_projection(velo,calib_data, left_cam)
