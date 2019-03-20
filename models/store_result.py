@@ -22,6 +22,36 @@ def unscale_points(pcl):
 
 
 
+def store_instance_results(data,label_seg,seg_predict,label_instance, instance_prediction, file_path):
+    seg_predict = convert_one_hot_to_label(seg_predict)
+    pcl  = np.zeros((data.shape[0],data.shape[1],6))
+    pcl[:,:,:3] = unscale_points(data[:,:,:3])
+    pcl[:,:,3]  = label
+    pcl[:,:,4]  = pred
+    for i in range(data.shape[0]):
+         instance_label = i+1
+         pcl[pcl[:,:,4] == 1,5] = instance_label
+    #we have a x,x,6 matrix
+    pcl = pcl.reshape(data.shape[0]*data.shape[1],6)
+    clustering_proj = clustering_birds_eye_view()
+    img1, img2 = clustering_proj.get_birds_eye_view(pcl, shift_pcl = False)
+
+    #pdb.set_trace()
+    plt.subplot(1,2,1)
+    plt.title('Ground Truth')
+    plt.axis('off')
+    plt.imshow(img1)
+
+    plt.subplot(1,2,2)
+    plt.title('Pointer')
+    plt.axis('off')
+    plt.imshow(img2)
+    plt.savefig(file_name, dpi = 300)
+
+
+
+
+
 def store_results(data, label,pred,file_name):
     #pdb.set_trace()
     pred = convert_one_hot_to_label(pred)
@@ -32,7 +62,7 @@ def store_results(data, label,pred,file_name):
     for i in range(data.shape[0]):
          instance_label = i+1
          pcl[pcl[:,:,4] == 1,5] = instance_label
-    #we have a x,x,6 matrix 
+    #we have a x,x,6 matrix
     pcl = pcl.reshape(data.shape[0]*data.shape[1],6)
     clustering_proj = clustering_birds_eye_view()
     img1, img2 = clustering_proj.get_birds_eye_view(pcl, shift_pcl = False)

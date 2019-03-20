@@ -50,32 +50,30 @@ def infer_model_trained(dataset_iterator, model_path, net_out,save_model_path):
 
 
 def infer_model(dataset_iterator,sess, net_out,save_model_path,iteration, num_samples = 10):
-    data, label , iter , batch_no= dataset_iterator.get_batch()
-    data = data[0]
-    label = label[0]
-    label = make_new_class(label)
-    label_ = get_one_hot_label(label)
+    data, label_instance ,label_seg, iteration_num , batch_no= dataset_iterator.get_batch()
+    label_seg = make_new_class(label_seg)
+    label_seg_ = get_one_hot_label(label_seg)
     counter = 0
     os.makedirs(save_model_path +'/result/epoch_' +str(iteration))
     #os.makedirs(save_model_path +'/result/raw')
     while (counter < num_samples):
-        pred = sess.run(net_out, feed_dict = {pcl_placeholder : data,
-                                       label_placeholder: label_,
+        seg_predict,instance_prediction = sess.run([seg_pred, instance_pred],feed_dict = {pcl_placeholder : data,
                                        is_training_pl:False})
-        a_2 = calculate_accuracy(pred, label)
-        a_3 = calculate_class_accuracy(pred, label)
-        a_4 = calculate_car_accuracy(pred,label)
+        a_2 = calculate_accuracy(seg_predict, label_seg)*100
+        a_3 = calculate_class_accuracy(seg_predict, label_seg)*100
+        a_4 = calculate_car_accuracy(seg_predict,label_seg)*100
         file_path = save_model_path + '/result/epoch_'+str(iteration) + '/' + str(counter) + '.png'
-        store_results(data,label,pred,file_path)
+        # store_instance_results(data,label_seg,seg_predict,label_instance, instance_prediction, file_path)
+        store_results(data,label_seg,seg_predict,file_path)
         np.save(save_model_path + '/result/epoch_'+str(iteration) +'/data' + str(counter) + '.npy', data)
-        np.save(save_model_path + '/result/epoch_' +str(iteration) +'/label'+ str(counter) + '.npy', label)
-        np.save(save_model_path + '/result/epoch_' + str(iteration) + '/pred' +str(counter) + '.npy', pred)
+        np.save(save_model_path + '/result/epoch_' +str(iteration) +'/label_seg'+ str(counter) + '.npy', label_seg)
+        np.save(save_model_path + '/result/epoch_' + str(iteration) + '/pred_seg' +str(counter) + '.npy', seg_predict)
+        np.save(save_model_path + '/result/epoch_' +str(iteration) +'/label_instance'+ str(counter) + '.npy', label_instance)
+        np.save(save_model_path + '/result/epoch_' + str(iteration) + '/pred_instance' +str(counter) + '.npy', instance_prediction)
         print ('saved prediction of ' + str(counter) + ' accuracy : ',a_2 , ' class accuracy : ',a_3,  ' car_class_accuracy : ' ,a_4)
-        data, label, iter , batch_no = dataset_iterator.get_batch()
-        data = data[0]
-        label = label[0]
-        label = make_new_class(label)
-        label_ = get_one_hot_label(label)
+        data, label_instance ,label_seg, iteration_num , batch_no= dataset_iterator.get_batch()
+        label_seg = make_new_class(label_seg)
+        label_seg_ = get_one_hot_label(label_seg)
         counter += 1
 
 
@@ -164,7 +162,7 @@ def train(dataset_iterator,test_iter, num_iteration, loss, seg_pred, instance_pr
                                            seg_label_placeholder: label_seg_,
                                            instance_label_placeholder: label_instance,
                                            is_training_pl:True})
-            
+
             accuracy = calculate_accuracy(seg_predict, label_seg)*100
             class_accuracy = calculate_class_accuracy(seg_predict, label_seg)*100
             car_acc = calculate_car_accuracy(seg_predict,label_seg)*100
@@ -175,13 +173,13 @@ def train(dataset_iterator,test_iter, num_iteration, loss, seg_pred, instance_pr
             loss_ar.append(batch_loss)
             acc_all.append(accuracy)
             class_acc.append(class_accuracy)
-            
+
             #print('Instance passed')
             data, label_instance ,label_seg, iteration_num , batch_no= dataset_iterator.get_batch()
             label_seg  = make_new_class(label_seg)
             label_seg_ = get_one_hot_label(label_seg)
             #pdb.set_trace()
-              
+
             if(batch_no == 0):
                 batch_accuracy = np.mean(acc_all)
                 class_accuracy = np.mean(class_acc)
@@ -194,8 +192,8 @@ def train(dataset_iterator,test_iter, num_iteration, loss, seg_pred, instance_pr
                 path = result_repo + '/checkpoints/instance_pointer2__'
                 save_path = saver.save(sess, path +str(iteration_num) +"_"+ str(batch_no) +".ckpt")
                 print("Model saved in path: %s" % save_path)
-                infer_model(test_iter,sess, pred, result_repo , iteration_num , num_samples = 100)
-            
+                infer_model(test_iter,sess, pred, result_repo , iteration_num , num_samples = 14)
+
         return result_repo
 
 
